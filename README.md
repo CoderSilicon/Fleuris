@@ -1,39 +1,56 @@
+![Fleuris](/src/assets/Logo.svg)
 # Fleuris
 
-This template should help get you started developing with Vue 3 in Vite.
+> **Handcrafted productivity for students.**
 
-## Recommended IDE Setup
+Fleuris is an attempt to make productivity feel less overwhelming and more intentional. Instead of chasing streaks, endless notifications, and complicated dashboards, Fleuris focuses on helping students organize their work in a way that feels calm, simple, and enjoyable.
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+Built from the ground up with care, Fleuris is handcrafted to be a study companion rather than just another productivity app.
 
-## Type Support for `.vue` Imports in TS
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+## ✨ Why Fleuris?
 
-## Customize configuration
+Student life is messy. Between assignments, exams, projects, deadlines, and everything else, staying organized can become a task of its own.
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+Fleuris was created with one goal:
 
-## Project Setup
+> **Make productivity easier, not heavier.**
 
-```sh
-pnpm install
-```
+Every interaction is designed to reduce load, so you spend less time managing tasks and more time actually getting things done.
 
-### Compile and Hot-Reload for Development
 
-```sh
-pnpm dev
-```
 
-### Type-Check, Compile and Minify for Production
 
-```sh
-pnpm build
-```
+## 🌼 Features
 
-### Lint with [ESLint](https://eslint.org/)
+* 📚 Organize assignments and coursework
+* ✅ Simple task management
+* ⏰ Stay on top of deadlines
+* 🌸 Clean, distraction-free interface
+* ⚡ Fast and lightweight experience
+* 🎨 Thoughtfully crafted design
 
-```sh
-pnpm lint
-```
+More features are planned as Fleuris continues to grow.
+
+
+
+## 🛠️ Philosophy
+
+Fleuris believes that productivity tools shouldn't become another source of stress.
+
+Instead of adding complexity, it embraces:
+
+* Simplicity over clutter
+* Clarity over noise
+* Consistency over perfection
+* Beautiful design with practical purpose
+
+
+## 🤝 Contributing
+
+Ideas, feedback, and contributions are always welcome. If you find a bug or have a suggestion, feel free to open an issue.
+
+
+<p align="center">
+  Made with 🌸 for students by a student.
+</p>

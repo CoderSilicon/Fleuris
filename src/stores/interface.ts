@@ -28,7 +28,6 @@ export interface PomodoroSession {
   taskId?: string
 }
 
-// Define the saved data structure for localStorage (serialized format)
 export interface SavedData {
   settings?: Partial<PomodoroSettings>
   tasks?: Array<Omit<Task, 'createdAt'> & { createdAt: string }>

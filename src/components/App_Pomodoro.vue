@@ -1,122 +1,108 @@
 <template>
   <div
-    class= " relative lexend rounded-4xl mx-auto p-9 transition-all duration-500 select-none max-w-4xl backdrop-blur-3xl bg-opacity-80"
-    :class="{
-      [ComputedColor + ' bg-opacity-85 border-2 border-white shadow-xl']: mode === 'pomodoro',
-      [ComputedColor + ' bg-opacity-75 border-2 border-white/40 shadow-lg']: mode === 'short',
-      [ComputedColor + ' border-2 border-slate-100/30  shadow-md']: mode === 'long',
-    }"
+    class="lexend relative mx-auto max-w-md rounded-[2rem] p-8 sm:p-10 transition-colors duration-700 select-none shadow-2xl shadow-black/10 ring-1 ring-white/15"
+    :class="[ComputedColor]"
   >
-    <!-- Decorative shapes -->
-    <div v-if="mode === 'short'" class="absolute inset-0 pointer-events-none">
-      <!-- soft circles -->
-      <div
-        class="absolute top-8 left-6 w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-white/20 blur-xl sm:blur-2xl"
-      ></div>
-      <div
-        class="absolute bottom-10 right-8 w-24 h-24 sm:w-36 sm:h-36 rounded-full bg-white/20 blur-2xl sm:blur-3xl"
-      ></div>
-
-      <!-- dotted pattern -->
-      <div class="absolute top-1/3 left-1/4 grid grid-cols-3 gap-1 sm:gap-2 opacity-10">
-        <div v-for="i in 9" :key="i" class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-white"></div>
-      </div>
-    </div>
-
-    <div v-else-if="mode === 'long'" class="absolute inset-0 pointer-events-none">
-      <!-- horizon line -->
-      <div class="absolute bottom-1/4 left-0 w-full h-0.5 bg-white/30 sm:bg-white/40"></div>
-
-      <!-- arc (sunrise feel) -->
-      <div
-        class="absolute bottom-1/4 left-1/4 w-14 h-8 sm:w-20 sm:h-10 rounded-t-full bg-white/40 sm:bg-white/50"
-      ></div>
-
-      <!-- layered translucent bars -->
-      <div
-        class="absolute top-1/4 right-0 w-1/2 sm:w-1/3 rounded-l-full h-0.5 sm:h-1 bg-white/40 sm:bg-white/50"
-      ></div>
-      <div
-        class="absolute top-1/3 right-0 w-1/3 sm:w-1/4 rounded-l-full h-0.5 sm:h-1 bg-white/40 sm:bg-white/50"
-      ></div>
-    </div>
-
     <!-- Mode Navigation -->
-    <nav id="NAVITEMS" class="flex justify-around items-center mb-8">
-      <ul class="flex space-x-6 list-none text-lg lexend relative">
+    <nav class="mb-10 flex justify-center">
+      <ul class="flex gap-1 rounded-full bg-black/15 p-1 list-none">
         <li
           v-for="m in modes"
           :key="m"
           @click="switchMode(m)"
-          class="group relative cursor-pointer px-4 py-2 rounded-lg transition-all duration-300 font-medium text-white"
+          class="cursor-pointer rounded-full px-4 py-2 text-sm font-medium tracking-wide transition-all duration-300"
+          :class="
+            mode === m
+              ? 'bg-white text-slate-900 shadow-sm'
+              : 'text-white/70 hover:text-white'
+          "
         >
           <span class="hidden sm:inline">{{ labelMap[m] }}</span>
           <span class="sm:hidden">{{ abbreviatedLabels[m] }}</span>
-
-          <!-- Active underline -->
-          <div
-            v-if="mode === m"
-            class="absolute left-1/2 -translate-x-1/2 bottom-0 h-1 bg-white rounded-full transition-all duration-300 w-5"
-          />
-
-          <!-- Hover underline (only shows if not active) -->
-          <div
-            v-if="mode !== m"
-            class="absolute left-1/2 -translate-x-1/2 bottom-0 h-1 bg-white rounded-full transition-all duration-300 w-0 group-hover:w-16"
-          />
         </li>
       </ul>
     </nav>
 
-    <!-- Timer Display -->
-    <div class="p-4">
-      <div class="text-center mb-8">
-        <h1
-          class="transition-opacity duration-700 ease-in-out text-6xl md:text-9xl font-bold mb-4 font-mono tracking-tight text-white"
-        >
+    <!-- Timer Ring -->
+    <div class="relative mx-auto mb-10 flex h-64 w-64 items-center justify-center sm:h-72 sm:w-72">
+      <svg viewBox="0 0 240 240" class="h-full w-full -rotate-90">
+        <circle
+          cx="120"
+          cy="120"
+          r="108"
+          fill="none"
+          stroke="rgba(255,255,255,0.18)"
+          stroke-width="6"
+        />
+        <circle
+          cx="120"
+          cy="120"
+          r="108"
+          fill="none"
+          stroke="white"
+          stroke-width="6"
+          stroke-linecap="round"
+          :stroke-dasharray="ringCircumference"
+          :stroke-dashoffset="ringDashOffset"
+          class="transition-[stroke-dashoffset] duration-1000 ease-linear motion-reduce:transition-none"
+        />
+      </svg>
+
+      <div class="absolute inset-0 flex flex-col items-center justify-center">
+        <p class="font-mono text-5xl sm:text-6xl font-semibold tabular-nums tracking-tight text-white">
           {{ formattedTime }}
-        </h1>
-
-        <!-- Progress Bar -->
-        <div class="w-full max-w-md mx-auto mb-6">
-          <div class="w-full h-2 rounded-full overflow-hidden bg-zinc-300/50">
-            <div
-              class="h-full rounded-full transition-all duration-1000 ease-linear bg-slate-100"
-              :style="{ width: progressPercentage + '%' }"
-            ></div>
-          </div>
-        </div>
-
-        <!-- Session Info -->
-        <div class="text-lg font-medium mb-6 text-slate-100">
-          <p v-if="mode === 'pomodoro'" class="text-xl lexend">
-            #{{ store.pomodoroCount + 1 }}
-            <span v-if="store.isLongBreakTime"> • Long break next!</span>
-          </p>
-          <p v-else-if="mode === 'short'">Short Break</p>
-          <p v-else>Long Break • You've earned it!</p>
-        </div>
+        </p>
+        <p class="mt-2 text-xs font-medium uppercase tracking-[0.2em] text-white/70">
+          {{ sessionLabel }}
+        </p>
       </div>
+    </div>
 
-      <!-- Control Buttons -->
-      <div class="flex justify-center items-center gap-4">
-        <button
-          @click="toggle"
-          @keyup.space="toggle"
-          @keydown.space="toggle"
-          :class="[ComputedColor]"
-          class="px-8 py-3 rounded-full font-semibold text-lg transition-all duration-300 hover:scale-105 active:scale-95 text-white"
-        >
-          {{ running ? 'Pause' : 'Start' }}
-        </button>
+    <!-- Session dots (pomodoro cycle progress) -->
+    <div class="mb-10 flex justify-center gap-2">
+      <span
+        v-for="i in 4"
+        :key="i"
+        class="h-1.5 w-1.5 rounded-full transition-all duration-300"
+        :class="i <= cycleDot ? 'bg-white' : 'bg-white/25'"
+      />
+    </div>
 
-        <button
-          @click="reset"
-          class="px-9 py-3 rounded-full font-medium text-lg border-2 text-white border-white hover:bg-white hover:text-black transition-all duration-300"
-        >
-          Reset
-        </button>
-      </div>
+    <!-- Controls -->
+    <div class="flex items-center justify-center gap-5">
+      <button
+        @click="reset"
+        aria-label="Reset timer"
+        title="Reset"
+        class="flex h-11 w-11 items-center justify-center rounded-full text-white/70 transition-all duration-300 hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white active:scale-95"
+      >
+        <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5">
+          <path
+            d="M4 4v6h6M20 20v-6h-6M4 10a8 8 0 0 1 14.32-4.86M20 14a8 8 0 0 1-14.32 4.86"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+
+      <button
+        @click="toggle"
+        @keyup.space.prevent="toggle"
+        :aria-label="running ? 'Pause timer' : 'Start timer'"
+        class="flex h-16 w-16 items-center justify-center rounded-full bg-white text-slate-900 shadow-lg transition-all duration-300 hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white focus-visible:outline-offset-2 active:scale-95 motion-reduce:hover:scale-100"
+      >
+        <svg v-if="!running" viewBox="0 0 24 24" fill="currentColor" class="ml-1 h-6 w-6">
+          <path d="M8 5v14l11-7z" />
+        </svg>
+        <svg v-else viewBox="0 0 24 24" fill="currentColor" class="h-6 w-6">
+          <path d="M6 5h4v14H6zM14 5h4v14h-4z" />
+        </svg>
+      </button>
+
+      <!-- spacer to balance the reset button so the play/pause stays centered -->
+      <div class="h-11 w-11" aria-hidden="true" />
     </div>
   </div>
 </template>
@@ -152,8 +138,6 @@ export default defineComponent({
     const running = ref(false)
     let interval: ReturnType<typeof setInterval> | null = null
 
-    // Computed properties for dynamic styling
-
     const durationInSeconds = computed(() => {
       switch (mode.value) {
         case 'short':
@@ -177,6 +161,25 @@ export default defineComponent({
       const total = durationInSeconds.value
       const remaining = timer.value
       return total > 0 ? ((total - remaining) / total) * 100 : 0
+    })
+
+    // Circular progress ring math (r = 108)
+    const ringCircumference = 2 * Math.PI * 108
+    const ringDashOffset = computed(
+      () => ringCircumference * (1 - progressPercentage.value / 100),
+    )
+
+    const sessionLabel = computed(() => {
+      if (mode.value === 'pomodoro') {
+        return store.isLongBreakTime ? 'Focus • long break next' : 'Focus session'
+      }
+      return mode.value === 'short' ? 'Short break' : 'Long break'
+    })
+
+    // Fills 1–4 dots based on completed pomodoros in the current cycle
+    const cycleDot = computed(() => {
+      const n = store.pomodoroCount % 4
+      return n === 0 && store.pomodoroCount > 0 ? 4 : n
     })
 
     function toggle() {
@@ -223,7 +226,6 @@ export default defineComponent({
       stop()
       store.completeTimer()
 
-      // Auto-switch logic based on settings
       if (mode.value === 'pomodoro') {
         const nextMode = store.isLongBreakTime ? 'long' : 'short'
         if (store.settings.autoStartBreaks) {
@@ -237,7 +239,6 @@ export default defineComponent({
           switchMode(nextMode)
         }
       } else {
-        // After break, go back to pomodoro
         if (store.settings.autoStartPomodoros) {
           setTimeout(() => {
             switchMode('pomodoro')
@@ -249,7 +250,6 @@ export default defineComponent({
       }
     }
 
-    // Watch for settings changes
     watch(durationInSeconds, () => {
       if (!running.value) {
         timer.value = durationInSeconds.value
@@ -257,7 +257,6 @@ export default defineComponent({
       }
     })
 
-    // Sync with store state
     watch(
       () => store.currentMode,
       (newMode) => {
@@ -269,13 +268,8 @@ export default defineComponent({
     )
 
     onMounted(() => {
-      // Load saved data
       store.loadFromLocalStorage()
-
-      // Initialize timer
       reset()
-
-      // Request notification permission
       if ('Notification' in window && store.settings.notifications) {
         Notification.requestPermission()
       }
@@ -295,6 +289,10 @@ export default defineComponent({
       running,
       formattedTime,
       progressPercentage,
+      ringCircumference,
+      ringDashOffset,
+      sessionLabel,
+      cycleDot,
       toggle,
       reset,
       switchMode,
@@ -303,20 +301,3 @@ export default defineComponent({
   },
 })
 </script>
-
-<style scoped>
-/* Custom animations for smooth transitions */
-.transition-all {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Progress bar animation */
-@keyframes progress {
-  0% {
-    width: 0%;
-  }
-  100% {
-    width: 100%;
-  }
-}
-</style>

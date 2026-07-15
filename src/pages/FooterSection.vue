@@ -1,25 +1,13 @@
 <template>
   <footer
-    class="w-full border-t border-gray-200 bg-gradient-to-br from-zinc-50 via-neutral-50 to-stone-50 text-gray-800 px-6 py-10 josefin-sans"
-  >
+    class="w-full border-t border-gray-200 bg-gradient-to-br from-zinc-50 via-neutral-50 to-stone-50 text-gray-800 px-6 py-10 josefin-sans">
     <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
       <!-- Logo + Name -->
       <div class="flex items-center gap-4">
-        <svg
-          version="1.0"
-          xmlns="http://www.w3.org/2000/svg"
-          width="32.000000pt"
-          height="32.000000pt"
-          viewBox="0 0 500.000000 500.000000"
-          preserveAspectRatio="xMidYMid meet"
-        >
-          <g
-            transform="translate(0.000000,500.000000) scale(0.100000,-0.100000)"
-            fill="#000000"
-            stroke="none"
-          >
-            <path
-              d="M3020 4384 c-100 -17 -145 -31 -220 -66 -144 -69 -277 -219 -331
+        <svg version="1.0" xmlns="http://www.w3.org/2000/svg" width="32.000000pt" height="32.000000pt"
+          viewBox="0 0 500.000000 500.000000" preserveAspectRatio="xMidYMid meet">
+          <g transform="translate(0.000000,500.000000) scale(0.100000,-0.100000)" fill="#000000" stroke="none">
+            <path d="M3020 4384 c-100 -17 -145 -31 -220 -66 -144 -69 -277 -219 -331
 -375 -29 -84 -41 -229 -30 -343 6 -52 9 -95 7 -97 -1 -1 -13 23 -26 55 -57
 142 -183 319 -292 412 -184 157 -347 223 -553 223 -206 0 -350 -56 -481 -187
 -135 -136 -198 -279 -198 -456 -1 -118 14 -180 70 -297 79 -165 219 -281 413
@@ -40,10 +28,8 @@
 268 l45 1 -46 16 c-138 51 -217 137 -249 269 -33 144 49 306 188 371 50 24 69
 27 157 27 86 0 108 -4 155 -26 102 -48 198 -146 250 -257 17 -34 30 -69 30
 -77 0 -8 4 -15 9 -15 4 0 11 31 13 68 9 118 71 224 165 279 96 56 177 65 276
-32z"
-            />
-            <path
-              d="M2385 2832 c-28 -10 -65 -28 -83 -41 l-33 -23 25 -27 c14 -15 26 -35
+32z" />
+            <path d="M2385 2832 c-28 -10 -65 -28 -83 -41 l-33 -23 25 -27 c14 -15 26 -35
 26 -44 0 -25 -33 -21 -60 8 -18 20 -26 22 -37 13 -24 -20 -63 -106 -69 -152
 l-7 -45 44 -3 c31 -2 44 -7 44 -18 0 -10 -13 -16 -42 -18 -38 -3 -43 -6 -43
 -27 0 -33 36 -128 62 -160 l21 -26 26 25 c15 14 35 26 44 26 25 0 21 -33 -8
@@ -55,8 +41,7 @@ l-7 -45 44 -3 c31 -2 44 -7 44 -18 0 -10 -13 -16 -42 -18 -38 -3 -43 -6 -43
 27 -120 55 -154 55 -15 0 -18 -8 -18 -45 0 -38 -3 -45 -20 -45 -17 0 -20 7
 -20 45 0 40 -2 45 -22 45 -13 -1 -46 -8 -73 -18z m133 -233 l3 -84 50 -51 c35
 -35 48 -55 43 -67 -10 -27 -25 -20 -81 35 l-53 52 0 96 c0 53 3 100 7 104 19
-18 28 -8 31 -85z"
-            />
+18 28 -8 31 -85z" />
           </g>
         </svg>
 
@@ -87,6 +72,7 @@ footer {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
