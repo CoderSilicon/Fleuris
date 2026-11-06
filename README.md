@@ -1,56 +1,75 @@
-![Fleuris](/src/assets/Logo.svg)
-# Fleuris
+# Nuxt Minimal Starter
 
-> **Handcrafted productivity for students.**
+Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
 
-Fleuris is an attempt to make productivity feel less overwhelming and more intentional. Instead of chasing streaks, endless notifications, and complicated dashboards, Fleuris focuses on helping students organize their work in a way that feels calm, simple, and enjoyable.
+## Setup
 
-Built from the ground up with care, Fleuris is handcrafted to be a study companion rather than just another productivity app.
+Make sure to install dependencies:
 
+```bash
+# npm
+npm install
 
-## ✨ Why Fleuris?
+# pnpm
+pnpm install
 
-Student life is messy. Between assignments, exams, projects, deadlines, and everything else, staying organized can become a task of its own.
+# yarn
+yarn install
 
-Fleuris was created with one goal:
+# bun
+bun install
+```
 
-> **Make productivity easier, not heavier.**
+## Development Server
 
-Every interaction is designed to reduce load, so you spend less time managing tasks and more time actually getting things done.
+Start the development server on `http://localhost:3000`:
 
+```bash
+# npm
+npm run dev
 
+# pnpm
+pnpm dev
 
+# yarn
+yarn dev
 
-## 🌼 Features
+# bun
+bun run dev
+```
 
-* 📚 Organize assignments and coursework
-* ✅ Simple task management
-* ⏰ Stay on top of deadlines
-* 🌸 Clean, distraction-free interface
-* ⚡ Fast and lightweight experience
-* 🎨 Thoughtfully crafted design
+## Production
 
-More features are planned as Fleuris continues to grow.
+Build the application for production:
 
+```bash
+# npm
+npm run build
 
+# pnpm
+pnpm build
 
-## 🛠️ Philosophy
+# yarn
+yarn build
 
-Fleuris believes that productivity tools shouldn't become another source of stress.
+# bun
+bun run build
+```
 
-Instead of adding complexity, it embraces:
+Locally preview production build:
 
-* Simplicity over clutter
-* Clarity over noise
-* Consistency over perfection
-* Beautiful design with practical purpose
+```bash
+# npm
+npm run preview
 
+# pnpm
+pnpm preview
 
-## 🤝 Contributing
+# yarn
+yarn preview
 
-Ideas, feedback, and contributions are always welcome. If you find a bug or have a suggestion, feel free to open an issue.
+# bun
+bun run preview
+```
 
-
-<p align="center">
-  Made with 🌸 for students by a student.
-</p>
+Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
