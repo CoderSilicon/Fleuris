@@ -1,75 +1,39 @@
-# Nuxt Minimal Starter
+# fleurıs
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+fleurıs is a calm space for connected thinking.
 
-## Setup
+When your ideas live in separate notes, lists, or folders, it’s easy to save things but hard to see how they belong together. A concept might sit in one place, a question in another, and a useful resource somewhere else — and the relationship between them gets lost. fleurıs helps solve that by letting you place ideas on a graph, so the links between them stay clear and easy to revisit.
 
-Make sure to install dependencies:
+## What fleurıs helps you do
 
-```bash
-# npm
-npm install
+- **Keep context:** connect a note to the question, source, or task that gives it meaning.
+- **See the bigger picture:** turn scattered thoughts into a map you can explore.
+- **Follow your thinking naturally:** ideas don’t always fit in one folder — in fleurıs, one idea can connect to many others.
+- **Start simply:** open the app, create a graph, add ideas, and draw connections.
+- **Stay in control:** your work stays with you, and you can keep a personal copy of a graph as a file whenever you want.
 
-# pnpm
-pnpm install
+## How to use it (simply)
 
-# yarn
-yarn install
+1. **Create a graph** for a topic, project, or question you care about.
+2. **Add the pieces** — ideas, resources, questions, and tasks.
+3. **Connect them** to show how they relate (what belongs under what, and what’s simply related).
+4. **Explore and refine** as your understanding grows.
+5. **Save a copy** as a file if you want a backup or want to move/share your work.
 
-# bun
-bun install
-```
+You don’t need an account to get started.
 
-## Development Server
+## What’s in this project
 
-Start the development server on `http://localhost:3000`:
+This repository contains the fleurıs website and the graph workspace in one Nuxt application.
 
-```bash
-# npm
-npm run dev
+- **Dashboard:** where you can find, create, open, copy, import, export, and remove your graphs.
+- **Graph editor:** a visual canvas for adding ideas, connecting them, and shaping your map over time.
 
-# pnpm
-pnpm dev
 
-# yarn
-yarn dev
+## Community and project files
 
-# bun
-bun run dev
-```
+- [Contributing guide](./CONTRIBUTING.md)
+- [Code of Conduct](./CODE_OF_CONDUCT.md)
+- [Security policy](./SECURITY.md)
+- [License](./LICENSE) — view and use permitted; modification, code changes/removal, and redistribution are not permitted without prior written permission.
 
-## Production
-
-Build the application for production:
-
-```bash
-# npm
-npm run build
-
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
-```
-
-Locally preview production build:
-
-```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.

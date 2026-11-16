@@ -155,7 +155,7 @@ onBeforeUnmount(() => {
           </p>
 
           <div data-hero-fade class="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <NuxtLink to="/pricing"
+            <NuxtLink to="/dashboard"
               class="inline-flex items-center justify-center rounded-full bg-[#3155D9] px-6 py-3.5 text-sm geist-500 text-white transition-colors hover:bg-[#2445BB]">
               Start for free
             </NuxtLink>

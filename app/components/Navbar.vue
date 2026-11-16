@@ -1,8 +1,9 @@
 <script setup>
 const links = [
   { to: '/concept', label: 'Concept' },
-  { to: '/pricing', label: 'Pricing' },
-  { to: '/about', label: 'About us' },
+  { to: '/documentation', label: 'Docs' },
+  { to: '/about', label: 'About' },
+  { to: '/privacy', label: 'Privacy' },
 ]
 
 const header = ref(null)

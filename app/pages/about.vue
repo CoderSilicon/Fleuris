@@ -1,80 +1,72 @@
 <script setup>
-import Cta from '../components/Cta.vue'
-
-const values = [
-  { n: '01', title: 'Curiosity first', body: 'We build for people who follow a question wherever it leads, not for people who file things away.' },
-  { n: '02', title: 'Connections over folders', body: 'Hierarchies force a single home for every idea. Graphs let an idea live in many places at once.' },
-  { n: '03', title: 'Calm by design', body: 'No feeds, no notifications, no noise. Just you and the shape of what you know.' },
-]
-
-const team = [
-  { name: 'Mara Okafor', role: 'Co-founder, Product' },
-  { name: 'Jonas Lind', role: 'Co-founder, Engineering' },
-  { name: 'Priya Raman', role: 'Design' },
-  { name: 'Theo Marchand', role: 'Research' },
-]
+useHead({ title: 'About — fleurıs' })
 </script>
 
 <template>
-  <section class="mx-auto w-full max-w-7xl px-6 pb-20 pt-10 md:px-12 md:pb-28 md:pt-16">
-    <p
-      v-reveal
-      class="mb-8 flex items-center gap-3 text-xs uppercase tracking-[0.25em] text-[#3155D9]"
-    >
-      <span class="h-px w-7 bg-[#3155D9]"></span>
-      About fleuris.
-    </p>
-    <h1
-      v-reveal
-      class="max-w-5xl text-[clamp(3rem,7vw,6.5rem)] font-medium leading-[0.95] tracking-[-0.06em]"
-    >
-      We make tools for thinking that <span class="text-[#3155D9]">grow with you.</span>
-    </h1>
-    <div class="mt-12 grid gap-10 md:grid-cols-2">
-      <p v-reveal="{ delay: 0.1 }" class="max-w-lg text-lg leading-relaxed text-neutral-500">
-        fleuris started as a notebook full of arrows. Every time we learned something, we drew a
-        line back to something older. The notebook ran out of pages long before the ideas ran out
-        of connections.
+  <div class="w-full px-6 py-12 md:px-12 md:py-16 lg:px-20">
+    <header class="border-b border-neutral-300 pb-10">
+      <h1 class="mt-4 text-4xl geist-500 tracking-tight text-[#17191F] md:text-5xl">About fleurıs</h1>
+      <p class="mt-5 max-w-4xl text-base leading-relaxed text-neutral-600 geist-400 md:text-lg">
+        This page is about the person behind fleurıs and the reason it was created.
       </p>
-      <p v-reveal="{ delay: 0.18 }" class="max-w-lg text-lg leading-relaxed text-neutral-500">
-        So we built the space we wanted: a living graph where notes, questions and discoveries
-        link to each other, and where the shape of your thinking becomes visible.
-      </p>
-    </div>
-  </section>
+    </header>
 
-  <section class="bg-[#17191F] text-[#F5F4EF]">
-    <div class="mx-auto w-full max-w-7xl px-6 py-24 md:px-12 md:py-28">
-      <p v-reveal class="mb-14 text-xs uppercase tracking-[0.25em] text-[#8CA4FF]">What we believe</p>
-      <div class="grid gap-px overflow-hidden bg-neutral-700 md:grid-cols-3">
-        <div
-          v-for="(v, index) in values"
-          :key="v.n"
-          v-reveal="{ delay: index * 0.08 }"
-          class="flex flex-col bg-[#17191F] p-8 md:p-10"
-        >
-          <span class="mb-16 text-xs tracking-[0.2em] text-[#8CA4FF]">{{ v.n }}</span>
-          <h3 class="mb-4 text-2xl tracking-tight">{{ v.title }}</h3>
-          <p class="leading-relaxed text-neutral-400">{{ v.body }}</p>
+    <div class="mt-12 grid gap-12 xl:grid-cols-2 xl:gap-16">
+      <section class="space-y-6">
+        <h2 class="text-2xl geist-500 tracking-tight text-[#17191F]">About the author</h2>
+
+        <div class="border-l-2 border-[#3155D9] bg-[#3155D9]/[0.04] px-5 py-4">
+          <p class="text-sm leading-relaxed text-neutral-700 geist-400 md:text-base">
+           It is an <span class="geist-500 text-[#17191F]">independent project created by its author</span> — someone who wanted a calmer, more personal way to work with ideas.
+            So, instead of building another place to simply store notes, the goal was to build a space where thoughts can stay connected to the reasons they mattered in the first place.
+          </p>
         </div>
-      </div>
+
+        <p class="text-sm leading-relaxed text-neutral-600 geist-400 md:text-base">
+          The author’s focus with fleurıs is simple: make thinking feel less scattered. When you learn something new, it often reminds you of an old question, a useful source, or a task you meant to do.
+          fleurıs was shaped around that everyday experience — the feeling that ideas do not arrive in neat folders, they arrive in links.
+        </p>
+
+        <p class="text-sm leading-relaxed text-neutral-600 geist-400 md:text-base">
+          That is also why the project leans toward being <span class="rounded bg-[#3155D9]/[0.08] px-1.5 py-0.5 geist-500 text-[#2445BB]">local-first</span> and easy to understand.
+          The author wanted a tool that feels like it belongs to the person using it: your graphs live with you, you can keep copies as files, and the interface tries to stay quiet so your attention stays on what you are thinking about not of cloud first
+        </p>
+      </section>
+
+      <section class="space-y-6">
+        <h2 class="text-2xl geist-500 tracking-tight text-[#17191F]">Why fleurıs was created</h2>
+
+        <p class="text-sm leading-relaxed text-neutral-600 geist-400 md:text-base">
+          It was created because a lot of good ideas get lost in the gaps between notes. You might save a concept in one place, a question in another, and a helpful resource somewhere else.
+          Later, each piece still exists, but the connection between them is harder to see — and that connection is often the most valuable part.
+        </p>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div class="border border-neutral-300 bg-white/40 p-5">
+            <p class="text-xs uppercase tracking-[0.16em] text-[#3155D9] geist-500">The problem</p>
+            <p class="mt-2 text-sm leading-relaxed text-neutral-600 geist-400">
+              Lists and folders are good for storing things, but they can hide how ideas relate. Over time, notes can become a pile of separate items instead of a picture of your understanding.
+            </p>
+          </div>
+          <div class="border border-neutral-300 bg-white/40 p-5">
+            <p class="text-xs uppercase tracking-[0.16em] text-[#3155D9] geist-500">The idea</p>
+            <p class="mt-2 text-sm leading-relaxed text-neutral-600 geist-400">
+              Put ideas on a graph so links are visible. A concept can lead to a question, a question can point to a resource, and a resource can inspire a new task — all in one place.
+            </p>
+          </div>
+        </div>
+
+        <p class="text-sm leading-relaxed text-neutral-600 geist-400 md:text-base">
+          In plain words, fleurıs was made to help people <span class="geist-500 text-[#17191F]">remember not just what they saved, but how it all fits together</span>.
+          It is for moments when you think, “I know I’ve seen something related to this before,” and you want a clear path back to it.
+        </p>
+
+        <div class="border-l-2 border-[#8CA4FF] bg-[#8CA4FF]/[0.08] px-5 py-4">
+          <p class="text-sm leading-relaxed text-neutral-700 geist-400 md:text-base">
+            The heart of the project is a human one: learning and thinking are rarely straight lines. fleurıs was created to give those winding, connected paths a home that feels clear, personal, and easy to return to.
+          </p>
+        </div>
+      </section>
     </div>
-  </section>
-
-  <section class="mx-auto w-full max-w-7xl px-6 py-24 md:px-12 md:py-28">
-    <p v-reveal class="mb-14 text-xs uppercase tracking-[0.25em] text-[#3155D9]">The people</p>
-    <ul class="grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
-      <li
-        v-for="(p, index) in team"
-        :key="p.name"
-        v-reveal="{ delay: index * 0.06 }"
-        class="border-t border-[#17191F] pt-5"
-      >
-        <p class="text-xl tracking-tight">{{ p.name }}</p>
-        <p class="mt-1 text-sm text-neutral-500">{{ p.role }}</p>
-      </li>
-    </ul>
-  </section>
-
-  <Cta eyebrow="Join us." cta="Start for free ↗" />
+  </div>
 </template>

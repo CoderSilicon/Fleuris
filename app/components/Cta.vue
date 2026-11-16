@@ -2,6 +2,7 @@
 defineProps({
   eyebrow: String,
   cta: { type: String, default: 'Create your first graph' },
+  to: { type: String, default: '/dashboard' },
 })
 
 const section = ref(null)
@@ -61,7 +62,7 @@ onBeforeUnmount(() => {
 
       <NuxtLink
         v-reveal="{ delay: 0.15 }"
-        to="/pricing"
+        :to="to"
         class="mt-12 inline-flex items-center justify-center rounded-full bg-[#3155D9] px-8 py-5 text-sm geist-500 text-white transition-all duration-200 hover:bg-[#2744b5] active:scale-[0.98]"
       >
         {{ cta }}
