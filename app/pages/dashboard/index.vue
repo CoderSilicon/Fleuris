@@ -1,19 +1,43 @@
 <script setup>
 import { downloadGraphFile } from '~/utils/graph'
+import { userDisplayName } from '~/utils/auth'
 
-useHead({ title: 'Dashboard — Fleurıs' })
 
 const router = useRouter()
+const { user, isAuthenticated, isLocal, isCloud } = useAuth()
 const {
   graphs,
   ready,
   storageError,
+  cloudStatus,
+  cloudError,
   createGraph,
   deleteGraph,
   duplicateGraph,
   importGraph,
+  syncNow,
   slugify,
 } = useGraphs()
+
+const displayName = computed(() => userDisplayName(user.value))
+const greeting = computed(() => (displayName.value ? `Hi, ${displayName.value}.` : 'Your graphs.'))
+const signedInEmail = computed(() => user.value?.email || '')
+
+const syncLabel = computed(() => {
+  if (!isAuthenticated.value) return 'Local only'
+  if (isLocal.value) return 'Local account'
+  if (cloudStatus.value === 'syncing') return 'Syncing…'
+  if (cloudStatus.value === 'error') return 'Sync paused'
+  if (cloudStatus.value === 'synced') return 'Synced'
+  return 'Cloud ready'
+})
+
+const syncTone = computed(() => {
+  if (cloudStatus.value === 'error') return 'bg-[#F5A623]'
+  if (cloudStatus.value === 'synced') return 'bg-[#34D399]'
+  if (cloudStatus.value === 'syncing') return 'bg-[#8CA4FF] animate-pulse'
+  return 'bg-white/25'
+})
 
 const searchQuery = ref('')
 const createOpen = ref(false)
@@ -194,21 +218,22 @@ function confirmDelete() {
 <template>
   <ClientOnly>
     <section class="min-h-screen bg-[#0c0c0d] geist-400 text-[#F5F4EF]" @dragover.prevent @drop.prevent="onDrop">
-      <header class="sticky top-0 z-30 border-b border-white/[0.07] bg-[#111113]/90 b
-">
-        <div class="mx-auto flex h-16 w-full max-w-7xl items-center gap-3 px-5 md:px-8">
-          <NuxtLink to="/"
-            class="text-[19px] font-semibold tracking-tight text-white transition-opacity hover:opacity-80">
-            fleur<span class="text-[#6D86FF]">ıs.</span>
-          </NuxtLink>
+      <main class="mx-auto w-full max-w-7xl px-5 pb-24 pt-7 md:px-8 md:pt-9">
+        <input ref="fileInput" type="file" accept=".fl,application/json,.json" class="hidden"
+          @change="onFileChange" />
 
-          <span class="h-4 w-px bg-white/[0.08]"></span>
-          <span class="text-[12px] font-medium text-white/45">Dashboard</span>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2">
 
-          <div class="ml-auto flex items-center gap-2">
-            <input ref="fileInput" type="file" accept=".fl,application/json,.json" class="hidden"
-              @change="onFileChange" />
+            <button v-if="isCloud" type="button" :disabled="cloudStatus === 'syncing'" @click="syncNow"
+              class="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.025] px-2.5 py-1 text-[10px] text-white/45 transition-colors hover:border-white/[0.16] hover:text-white disabled:cursor-wait disabled:opacity-60"
+              :title="cloudError || 'Sync your graphs now'">
+              <span class="h-1.5 w-1.5 rounded-full" :class="syncTone"></span>
+              {{ syncLabel }}
+            </button>
+          </div>
 
+          <div class="flex items-center gap-2">
             <button @click="startImport" :disabled="importing"
               class="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.09] bg-white/[0.025] px-3 py-2 text-[11.5px] font-medium text-white/55 transition-colors hover:border-white/[0.16] hover:bg-white/[0.05] hover:text-white disabled:cursor-wait disabled:opacity-50">
               <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -227,17 +252,26 @@ function confirmDelete() {
             </button>
           </div>
         </div>
-      </header>
 
-      <main class="mx-auto w-full max-w-7xl px-5 pb-24 pt-10 md:px-8 md:pt-14">
-        <div class="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+        <div class="mt-8 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div>
             <h1 class="mt-2 text-[clamp(2rem,5vw,3.5rem)] font-semibold leading-none tracking-[-0.05em] text-white">
-              Hi, {{ user }}.
+              {{ greeting }}
             </h1>
-            <p class="mt-4 max-w-lg text-[13px] leading-relaxed text-white/40">
-              Open a flowchart, start a new one, or carry a graph between machines with a
-              <span class="font-medium text-white/65">.fl</span> file. Everything is stored locally in this browser.
+            <p v-if="isCloud" class="mt-4 max-w-lg text-[13px] leading-relaxed text-white/40">
+              Signed in as <span class="font-medium text-white/65">{{ signedInEmail }}</span>.
+              Changes sync quietly to your account and stay saved in this browser.
+            </p>
+            <p v-else-if="isLocal" class="mt-4 max-w-lg text-[13px] leading-relaxed text-white/40">
+              Local account for <span class="font-medium text-white/65">{{ displayName }}</span>.
+              Everything is stored in this browser only. Export a
+              <span class="font-medium text-white/65">.fl</span> file to take a graph with you.
+            </p>
+            <p v-else class="mt-4 max-w-lg text-[13px] leading-relaxed text-white/40">
+              Set up an account to continue. Open a graph, start a new one, or carry one between
+              machines with a <span class="font-medium text-white/65">.fl</span> file.
+              <NuxtLink to="/login?redirect=/dashboard"
+                class="text-[#8CA4FF] transition-colors hover:text-white">Sign in</NuxtLink>.
             </p>
           </div>
 
@@ -284,6 +318,11 @@ function confirmDelete() {
         <p v-if="storageError"
           class="mt-5 rounded-xl border border-red-400/20 bg-red-400/[0.06] px-4 py-3 text-[11.5px] text-red-300/80">
           {{ storageError }}
+        </p>
+
+        <p v-if="cloudError"
+          class="mt-5 rounded-xl border border-[#F5A623]/25 bg-[#F5A623]/[0.06] px-4 py-3 text-[11.5px] text-[#F5C877]">
+          {{ cloudError }}
         </p>
 
         <div v-if="!graphs.length"
@@ -501,7 +540,9 @@ function confirmDelete() {
                         <h2 class="text-[18px] font-semibold tracking-[-0.02em] text-white">Delete this graph?</h2>
                         <p class="mt-1.5 text-[12px] leading-relaxed text-white/45">
                             <span class="font-medium text-white/80">“{{ deleteTarget.title }}”</span>
-                            and all of its nodes, links, and saved canvas positions will be removed from this browser. This cannot be undone.
+                            and all of its nodes, links, and saved canvas positions will be removed from
+                            {{ isCloud ? 'this device and your synced account' : 'this browser' }}. This
+                            cannot be undone.
                         </p>
                     </div>
                 </div>

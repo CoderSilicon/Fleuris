@@ -1,5 +1,4 @@
 <script setup>
-useHead({ title: 'Documentation — fleurıs' })
 
 const steps = [
   {
@@ -42,25 +41,31 @@ const nodeTypes = [
 ]
 
 const shortcuts = [
-  { keys: 'Esc', action: 'Step back: close menus, cancel what you started, or clear your selection.' },
-  { keys: 'Ctrl + S / Cmd + S', action: 'Save your current work.' },
-  { keys: 'Delete / Backspace', action: 'Remove the selected item when you’re not typing.' },
-  { keys: 'Enter', action: 'Confirm a name or edit you’re finishing.' },
+  { keys: 'N', action: 'Create a new node at the centre of the canvas and open it for editing.' },
+  { keys: 'C', action: 'Connect a selected node to another. If two nodes are selected, open the relationship chooser directly.' },
+  { keys: 'Shift + click', action: 'Select two or more nodes, then press C to connect the first two.' },
+  { keys: 'Enter', action: 'Edit the selected node.' },
+  { keys: 'Delete / Backspace', action: 'Remove the selected node or nodes when you’re not typing.' },
+  { keys: 'Ctrl + D / Cmd + D', action: 'Duplicate the selected node or nodes.' },
+  { keys: 'F', action: 'Fit the whole graph in view.' },
+  { keys: 'A', action: 'Arrange the graph by main topic.' },
+  { keys: 'Esc', action: 'Step back: close menus, cancel a connection, or clear your selection.' },
+  { keys: 'Ctrl + S / Cmd + S', action: 'Save now. Auto-save already keeps your work up to date.' },
 ]
 
 const helps = [
   {
-    title: 'When your notes feel scattered',
+    title: 'When you feel scattered?',
     detail: 'Instead of keeping ideas in separate places, fleurıs helps you put them in one view so you can see how they connect.',
     accent: 'border-[#3155D9] bg-[#3155D9]/[0.04]',
   },
   {
-    title: 'When you forget why something mattered',
+    title: 'When you forget why something mattered?',
     detail: 'By linking an idea to its source, related question, or next step, you keep the context that made it useful.',
     accent: 'border-[#8CA4FF] bg-[#8CA4FF]/[0.08]',
   },
   {
-    title: 'When your thinking changes',
+    title: 'When your thinking changes?',
     detail: 'Graphs are easy to reshape. You can add, move, rename, and reconnect things as your understanding grows.',
     accent: 'border-[#34D399] bg-[#34D399]/[0.08]',
   },
@@ -70,22 +75,21 @@ const helps = [
 <template>
   <div class="w-full px-6 py-12 md:px-12 md:py-16 lg:px-20">
     <header class="border-b border-neutral-300 pb-10">
-      <p class="text-xs uppercase tracking-[0.2em] text-[#3155D9] geist-500">Guide</p>
       <h1 class="mt-4 text-4xl geist-500 tracking-tight text-[#17191F] md:text-5xl">How fleurıs helps, and how to use it</h1>
       <p class="mt-5 max-w-4xl text-base leading-relaxed text-neutral-600 geist-400 md:text-lg">
-        fleurıs is for the moments when your ideas are related, but your notes don’t show it. It gives you a simple visual way to connect what you know, what you’re asking, what you’ve found, and what you need to do next.
+        fleurıs is a way to visualize and organize your thoughts when your ideas are related. It gives you a simple visual way to connect what you know, what you’re asking, what you’ve found, and what you need to do next almost like a mind map.
       </p>
       <div class="mt-5 border-l-2 border-[#3155D9] bg-[#3155D9]/[0.04] px-5 py-4">
         <p class="text-sm leading-relaxed text-neutral-700 geist-400 md:text-base">
-          <span class="geist-500 text-[#17191F]">Simple by design:</span> no account is needed to get started, your work stays with you, and you can keep a personal file copy of any graph whenever you want.
-          <span class="geist-500 text-[#2445BB]"> Sign-in will be added later</span> to make it easier to access your work across places.
+          <span class="geist-500 text-[#17191F]">Simple by design:</span> a local account takes only a name, your work stays in this browser, and you can keep a personal file copy of any graph whenever you want.
+          <span class="geist-500 text-[#2445BB]"> A cloud account is optional</span> and adds sync between devices when you want it.
         </p>
       </div>
     </header>
 
     <div class="mt-12 space-y-14">
       <section>
-        <h2 class="text-2xl geist-500 tracking-tight text-[#17191F]">The problem fleurıs solves</h2>
+        <h2 class="text-2xl geist-500 tracking-tight text-[#17191F]">The problem it solves</h2>
         <div class="mt-5 grid gap-4 lg:grid-cols-3">
           <article v-for="item in helps" :key="item.title" :class="['border-l-2 p-5', item.accent]">
             <h3 class="text-base geist-500 tracking-tight text-[#17191F]">{{ item.title }}</h3>
@@ -105,7 +109,7 @@ const helps = [
       </section>
 
       <section class="border-t border-neutral-300 pt-10">
-        <h2 class="text-2xl geist-500 tracking-tight text-[#17191F]">What you can do in fleurıs</h2>
+        <h2 class="text-2xl geist-500 tracking-tight text-[#17191F]">What you can do?</h2>
         <div class="mt-6 grid gap-8 xl:grid-cols-2">
           <div>
             <h3 class="text-lg geist-500 tracking-tight text-[#17191F]">In your graph library</h3>
@@ -123,6 +127,7 @@ const helps = [
                 <p><span class="geist-500 text-[#17191F]">Move around freely:</span> zoom in to focus, zoom out to see the whole picture, and arrange ideas wherever they make sense.</p>
                 <p><span class="geist-500 text-[#17191F]">Give each idea a clear place:</span> add a title and a short description so you remember what it means later.</p>
                 <p><span class="geist-500 text-[#17191F]">Show relationships:</span> link items as part of a bigger topic, or as related ideas that inform each other.</p>
+                <p><span class="geist-500 text-[#17191F]">Tidy the layout:</span> use Arrange to line up main topics and their subtopics in clear rows, keeping connected ideas close together.</p>
                 <p><span class="geist-500 text-[#17191F]">Change things anytime:</span> rename, edit, reconnect, or remove items as your thinking evolves.</p>
               </div>
             </div>
@@ -161,6 +166,88 @@ const helps = [
         </div>
       </section>
 
+      <section id="accounts" class="scroll-mt-28 border-t border-neutral-300 pt-10">
+        <h2 class="text-2xl geist-500 tracking-tight text-[#17191F]">Accounts and optional sync</h2>
+        <p class="mt-4 max-w-4xl text-sm leading-relaxed text-neutral-600 geist-400 md:text-base">
+          fleurıs is local-first. An account is required before the dashboard opens, but it can be a
+          local one. A cloud account stores graphs in your Supabase project so the same library can
+          follow you to another device.
+        </p>
+
+        <div class="mt-5 grid gap-4 lg:grid-cols-3">
+          <article class="border border-neutral-300 bg-white/40 p-5">
+            <p class="text-xs uppercase tracking-[0.16em] text-[#3155D9] geist-500">Local account</p>
+            <p class="mt-2 text-sm leading-relaxed text-neutral-600 geist-400 md:text-base">
+              Choose Local, enter a display name, and continue. Your name and graphs stay in this
+              browser. No email, no password, no server copy.
+            </p>
+          </article>
+          <article class="border border-neutral-300 bg-white/40 p-5">
+            <p class="text-xs uppercase tracking-[0.16em] text-[#3155D9] geist-500">Cloud account</p>
+            <p class="mt-2 text-sm leading-relaxed text-neutral-600 geist-400 md:text-base">
+              Sign in to load the graphs owned by your account. This browser’s local graphs stay in
+              their own library and are never mixed in. Signing out returns you to the sign-in page.
+            </p>
+          </article>
+          <article class="border border-neutral-300 bg-white/40 p-5">
+            <p class="text-xs uppercase tracking-[0.16em] text-[#3155D9] geist-500">What is synced</p>
+            <p class="mt-2 text-sm leading-relaxed text-neutral-600 geist-400 md:text-base">
+              Graph titles, descriptions, nodes, connections, and canvas positions. Edits sync
+              automatically; your email address is used only to sign you in.
+            </p>
+          </article>
+        </div>
+
+        <div class="mt-6 border-l-2 border-[#8CA4FF] bg-[#8CA4FF]/[0.08] px-5 py-4">
+          <p class="text-sm leading-relaxed text-neutral-700 geist-400 md:text-base">
+            <span class="geist-500 text-[#17191F]">Auth is compulsory:</span>
+            <code class="rounded bg-white/50 px-1 py-0.5 text-xs">/dashboard</code> and the editor always
+            require a completed account. Choose <span class="geist-500 text-[#17191F]">Sign in</span> for a
+            cloud account, <span class="geist-500 text-[#17191F]">Create account</span> to register one, or
+            <span class="geist-500 text-[#17191F]">Local</span> to enter a name and work only in this browser.
+            There is no way to skip this step.
+          </p>
+        </div>
+
+        <div class="mt-6 border-l-2 border-[#8CA4FF] bg-[#8CA4FF]/[0.08] px-5 py-4">
+          <p class="text-sm leading-relaxed text-neutral-700 geist-400 md:text-base">
+            <span class="geist-500 text-[#17191F]">Account libraries stay separate:</span> local
+            accounts use this browser’s local library. Cloud accounts show exactly the rows in
+            <code class="rounded bg-white/50 px-1 py-0.5 text-xs">public.graphs</code> that belong to that
+            user. Edits made while signed in push to that account; local graphs remain untouched and
+            reappear when you use a local account again.
+          </p>
+        </div>
+
+        <details class="mt-6 border border-neutral-300 bg-white/40 p-5">
+          <summary class="cursor-pointer text-sm geist-500 text-[#17191F]">
+            Running Supabase locally (for self-hosting)
+          </summary>
+          <div class="mt-4 space-y-3 text-sm leading-relaxed text-neutral-600 geist-400">
+            <p>
+              1. Copy <code class="rounded bg-neutral-200/50 px-1.5 py-0.5 text-xs">.env.example</code>
+              to <code class="rounded bg-neutral-200/50 px-1.5 py-0.5 text-xs">.env.local</code>.
+            </p>
+            <p>
+              2. Start Supabase locally with the Supabase CLI, then set
+              <code class="rounded bg-neutral-200/50 px-1.5 py-0.5 text-xs">SUPABASE_URL</code>
+              to <code class="rounded bg-neutral-200/50 px-1.5 py-0.5 text-xs">http://127.0.0.1:54321</code>
+              and set <code class="rounded bg-neutral-200/50 px-1.5 py-0.5 text-xs">SUPABASE_KEY</code>
+              to the local publishable/anon key.
+            </p>
+            <p>
+              3. Run <code class="rounded bg-neutral-200/50 px-1.5 py-0.5 text-xs">supabase/schema.sql</code>
+              in the Supabase SQL editor. It creates the <code class="rounded bg-neutral-200/50 px-1.5 py-0.5 text-xs">graphs</code>
+              table and row-level security policies.
+            </p>
+            <p>
+              4. Add <code class="rounded bg-neutral-200/50 px-1.5 py-0.5 text-xs">http://localhost:3000/auth/callback</code>
+              to your Supabase authentication redirect URLs, then restart the Nuxt app.
+            </p>
+          </div>
+        </details>
+      </section>
+
       <section class="border-t border-neutral-300 pt-10">
         <h2 class="text-2xl geist-500 tracking-tight text-[#17191F]">Your work, kept simple</h2>
         <div class="mt-4 grid gap-4 lg:grid-cols-3">
@@ -169,8 +256,8 @@ const helps = [
             <p class="mt-2 text-sm leading-relaxed text-neutral-600 geist-400 md:text-base">You can start using fleurıs right away without signing up.</p>
           </div>
           <div class="border border-neutral-300 bg-white/40 p-5">
-            <p class="text-xs uppercase tracking-[0.16em] text-[#3155D9] geist-500">Stays with you</p>
-            <p class="mt-2 text-sm leading-relaxed text-neutral-600 geist-400 md:text-base">Your graphs stay with you on this device, so your thinking space feels personal and close at hand.</p>
+            <p class="text-xs uppercase tracking-[0.16em] text-[#3155D9] geist-500">Sync only if you want</p>
+            <p class="mt-2 text-sm leading-relaxed text-neutral-600 geist-400 md:text-base">Sign in when it helps, and sign out whenever you prefer to keep everything local again.</p>
           </div>
           <div class="border border-neutral-300 bg-white/40 p-5">
             <p class="text-xs uppercase tracking-[0.16em] text-[#3155D9] geist-500">Easy to keep a copy</p>

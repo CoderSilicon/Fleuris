@@ -1,19 +1,27 @@
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
-import { downloadGraphFile, NODE_TYPE_META as TYPE_META, NODE_TYPES } from '~/utils/graph'
+import { wouldCreateTopicCycle, downloadGraphFile, NODE_TYPE_META as TYPE_META, NODE_TYPES } from '~/utils/graph'
 
 const route = useRoute()
-const { getGraph, saveGraph } = useGraphs()
+const { getGraph, saveGraph, cloudStatus } = useGraphs()
+const { isCloud } = useAuth()
 
 const slug = computed(() => String(route.params.slug || ''))
 const graph = computed(() => getGraph(slug.value))
+const awaitingCloud = computed(() => (
+    !graph.value
+    && isCloud.value
+    && cloudStatus.value !== 'synced'
+    && cloudStatus.value !== 'error'
+))
 
 useHead(() => ({
-    title: graph.value ? `${graph.value.title} — Fleurıs` : 'Graph — Fleurıs'
+    title: `${graph.value.title} `
 }))
 
 const NODE_W = 192
 const NODE_H = 66
+const NODE_RADIUS = 13
 
 const nodeTypes = NODE_TYPES
 
@@ -24,6 +32,17 @@ const toolClass = 'inline-flex items-center gap-1.5 whitespace-nowrap rounded-md
 const toolIdleClass = 'text-white/45 hover:bg-white/[0.05] hover:text-white'
 
 const toolActiveClass = 'bg-[#4B6BFF]/15 text-[#8CA4FF]'
+
+const shortcutRows = [
+    { label: 'New node', keys: 'N' },
+    { label: 'Connect selected / two selected', keys: 'C' },
+    { label: 'Edit selected node', keys: 'Enter' },
+    { label: 'Delete selected nodes', keys: 'Del' },
+    { label: 'Duplicate selected', keys: '⌘ / Ctrl + D' },
+    { label: 'Fit to view', keys: 'F' },
+    { label: 'Auto arrange', keys: 'A' },
+    { label: 'Save now', keys: '⌘ / Ctrl + S' },
+]
 
 const controlClass = 'inline-flex items-center justify-center rounded-md p-1.5 text-white/35 transition-colors hover:bg-white/[0.06] hover:text-white'
 
@@ -64,6 +83,7 @@ let saveTimer = null
 
 // --- UI state -----------------------------------------------------------
 const selectedNodeId = ref(null)
+const selectedNodeIds = ref([])
 const detailsNodeId = ref(null)
 const isEditingDetails = ref(false)
 const editDraft = reactive({ title: '', description: '', type: 'Concept' })
@@ -78,9 +98,11 @@ const dragState = ref(null)
 
 const connecting = reactive({ active: false, sourceId: null })
 const pendingConnection = ref(null)
+const pointerGraph = reactive({ x: 0, y: 0, visible: false })
 
 const contextMenu = reactive({ open: false, nodeId: null, x: 0, y: 0 })
 const canvasMenu = reactive({ open: false, x: 0, y: 0 })
+const shortcutsOpen = ref(false)
 
 const toast = ref('')
 let toastTimer = null
@@ -88,10 +110,75 @@ let toastTimer = null
 const isEditingGraphTitle = ref(false)
 const graphTitleDraft = ref('')
 const titleInputRef = ref(null)
+const editTitleRef = ref(null)
 
 // --- Lookups ------------------------------------------------------------
+const nodeById = computed(() => new Map(nodes.value.map(node => [node.id, node])))
+
+const degreeMap = computed(() => {
+    const counts = new Map()
+
+    for (const connection of connections.value) {
+        counts.set(connection.from, (counts.get(connection.from) || 0) + 1)
+        counts.set(connection.to, (counts.get(connection.to) || 0) + 1)
+    }
+
+    return counts
+})
+
+const parentTopicEdgeByChild = computed(() => {
+    const parents = new Map()
+
+    for (const connection of connections.value) {
+        if (connection.kind !== 'topic') continue
+        if (!parents.has(connection.to)) parents.set(connection.to, connection)
+    }
+
+    return parents
+})
+
+const topicSets = computed(() => {
+    const hasParent = new Set()
+    const hasChild = new Set()
+
+    for (const connection of connections.value) {
+        if (connection.kind !== 'topic') continue
+        hasChild.add(connection.from)
+        hasParent.add(connection.to)
+    }
+
+    return { hasParent, hasChild }
+})
+
 function getNodeById(id) {
-    return nodes.value.find(n => n.id === id) || null
+    return nodeById.value.get(id) || null
+}
+
+/**
+ * `selectedNodeId` is the primary node (details, delete shortcut, etc.).
+ * `selectedNodeIds` keeps the shift-clicked set so two nodes can be connected
+ * without entering connect mode first.
+ */
+function setSelection(ids = []) {
+    const validIds = [...new Set(ids.filter(id => getNodeById(id)))]
+
+    selectedNodeIds.value = validIds
+    selectedNodeId.value = validIds.length ? validIds[validIds.length - 1] : null
+}
+
+function toggleShiftSelection(node) {
+    const ids = [...selectedNodeIds.value]
+    const index = ids.indexOf(node.id)
+
+    if (index === -1) ids.push(node.id)
+    else ids.splice(index, 1)
+
+    setSelection(ids)
+    closeDetails()
+
+    if (ids.length >= 2) showToast(`${ids.length} nodes selected — press C to connect`)
+    else if (ids.length === 1) showToast('1 node selected — shift-click another')
+    else showToast('Selection cleared')
 }
 
 function nextNodeId() {
@@ -112,24 +199,23 @@ function truncate(text, max = 20) {
 }
 
 function degree(nodeId) {
-    return connections.value.filter(c => c.from === nodeId || c.to === nodeId).length
+    return degreeMap.value.get(nodeId) || 0
 }
 
 function isTopLevelTopic(node) {
-    const hasParent = connections.value.some(c => c.kind === 'topic' && c.to === node.id)
-    const hasChildren = connections.value.some(c => c.kind === 'topic' && c.from === node.id)
-    return !hasParent && hasChildren
+    const { hasParent, hasChild } = topicSets.value
+    return !hasParent.has(node.id) && hasChild.has(node.id)
 }
 
 function getMainTopic(nodeId) {
-    const edge = connections.value.find(c => c.kind === 'topic' && c.to === nodeId)
+    const edge = parentTopicEdgeByChild.value.get(nodeId)
     if (!edge) return null
     const node = getNodeById(edge.from)
     return node ? { edge, node } : null
 }
 
 function getAttachments(nodeId) {
-    const mainEdge = connections.value.find(c => c.kind === 'topic' && c.to === nodeId)
+    const mainEdge = parentTopicEdgeByChild.value.get(nodeId)
     return connections.value
         .filter(c => c !== mainEdge && (c.from === nodeId || c.to === nodeId))
         .map(c => {
@@ -179,77 +265,188 @@ const filteredNodes = computed(() => {
 })
 
 // --- Graph geometry -----------------------------------------------------
-function boundaryPoint(from, to) {
-    const dx = to.x - from.x
-    const dy = to.y - from.y
-    if (dx === 0 && dy === 0) return { x: from.x, y: from.y }
-    const scale = Math.min(
-        (NODE_W / 2) / Math.max(Math.abs(dx), 0.0001),
-        (NODE_H / 2) / Math.max(Math.abs(dy), 0.0001)
-    )
-    return { x: from.x + dx * scale, y: from.y + dy * scale }
+// Connectors are modelled as leaving a node through the side that faces the
+// other node. Each cubic Bézier then starts and ends perpendicular to that
+// side, so the arrow always enters the target cleanly instead of cutting
+// across a corner at an odd angle.
+function connectionPairKey(edge) {
+    return edge.from <= edge.to ? `${edge.from}:${edge.to}` : `${edge.to}:${edge.from}`
 }
 
-function getEdgePath(edge) {
-    const from = getNodeById(edge.from)
-    const to = getNodeById(edge.to)
-    if (!from || !to) return ''
+// Edges that share a pair of nodes (for example a topic edge plus a related
+// edge) are shifted sideways so they remain individually readable.
+const parallelOffsets = computed(() => {
+    const groups = new Map()
 
-    const start = boundaryPoint(from, to)
-    const end = boundaryPoint(to, from)
-    const dx = end.x - start.x
-    const dy = end.y - start.y
-
-    let c1x, c1y, c2x, c2y
-    if (Math.abs(dx) > Math.abs(dy)) {
-        c1x = start.x + dx * 0.5
-        c1y = start.y
-        c2x = end.x - dx * 0.5
-        c2y = end.y
-    } else {
-        c1x = start.x
-        c1y = start.y + dy * 0.5
-        c2x = end.x
-        c2y = end.y - dy * 0.5
+    for (const edge of connections.value) {
+        const key = connectionPairKey(edge)
+        if (!groups.has(key)) groups.set(key, [])
+        groups.get(key).push(edge)
     }
 
-    return `M ${start.x} ${start.y} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${end.x} ${end.y}`
+    const offsets = new Map()
+
+    for (const group of groups.values()) {
+        group.sort((a, b) => {
+            if (a.kind !== b.kind) return a.kind === 'topic' ? -1 : 1
+            return (Number(a.id) || 0) - (Number(b.id) || 0)
+        })
+
+        const spacing = 24
+        group.forEach((edge, index) => {
+            offsets.set(edge.id, (index - (group.length - 1) / 2) * spacing)
+        })
+    }
+
+    return offsets
+})
+
+function facingSide(from, to) {
+    const dx = to.x - from.x
+    const dy = to.y - from.y
+
+    if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? 'right' : 'left'
+    return dy >= 0 ? 'bottom' : 'top'
+}
+
+function rectanglePort(node, side, slide = 0) {
+    const halfW = NODE_W / 2
+    const halfH = NODE_H / 2
+    const inset = NODE_RADIUS + 5
+
+    if (side === 'right') {
+        return { x: node.x + halfW, y: node.y + clamp(slide, -halfH + inset, halfH - inset), nx: 1, ny: 0 }
+    }
+    if (side === 'left') {
+        return { x: node.x - halfW, y: node.y + clamp(slide, -halfH + inset, halfH - inset), nx: -1, ny: 0 }
+    }
+    if (side === 'bottom') {
+        return { x: node.x + clamp(slide, -halfW + inset, halfW - inset), y: node.y + halfH, nx: 0, ny: 1 }
+    }
+    return { x: node.x + clamp(slide, -halfW + inset, halfW - inset), y: node.y - halfH, nx: 0, ny: -1 }
+}
+
+function curveBetween(from, to, slide = 0) {
+    const start = rectanglePort(from, facingSide(from, to), slide)
+    const end = rectanglePort(to, facingSide(to, from), slide)
+    const distance = Math.hypot(end.x - start.x, end.y - start.y) || 1
+    const spread = clamp(distance * 0.42, 28, 170)
+
+    const c1 = { x: start.x + start.nx * spread, y: start.y + start.ny * spread }
+    const c2 = { x: end.x + end.nx * spread, y: end.y + end.ny * spread }
+
+    return {
+        start,
+        end,
+        c1,
+        c2,
+        path: `M ${start.x} ${start.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${end.x} ${end.y}`,
+    }
+}
+
+// Build the arrowhead from the curve's real end tangent (end - control),
+// rather than relying on an SVG marker that can drift from the path.
+function arrowPoints(end, control) {
+    const dx = end.x - control.x
+    const dy = end.y - control.y
+    const length = Math.hypot(dx, dy) || 1
+    const ux = dx / length
+    const uy = dy / length
+    const size = 11
+    const halfWidth = 4.4
+    const baseX = end.x - ux * size
+    const baseY = end.y - uy * size
+    const px = -uy
+    const py = ux
+
+    return [
+        `${end.x},${end.y}`,
+        `${baseX + px * halfWidth},${baseY + py * halfWidth}`,
+        `${baseX - px * halfWidth},${baseY - py * halfWidth}`,
+    ].join(' ')
 }
 
 function edgeActive(edge) {
     return focusNodeId.value != null && (edge.from === focusNodeId.value || edge.to === focusNodeId.value)
 }
 
-function edgeStroke(edge) {
-    if (edgeActive(edge)) return '#6D86FF'
-    return edge.kind === 'topic' ? '#3D4760' : '#333B4D'
+const renderedConnections = computed(() => {
+    const offsets = parallelOffsets.value
+
+    return connections.value
+        .map(edge => {
+            const from = getNodeById(edge.from)
+            const to = getNodeById(edge.to)
+            if (!from || !to) return null
+
+            const curve = curveBetween(from, to, offsets.get(edge.id) || 0)
+            const active = edgeActive(edge)
+
+            return {
+                id: edge.id,
+                path: curve.path,
+                arrow: edge.kind === 'topic' ? arrowPoints(curve.end, curve.c2) : null,
+                color: active ? '#6D86FF' : edge.kind === 'topic' ? '#3D4760' : '#333B4D',
+                width: active ? 2.4 : edge.kind === 'topic' ? 2 : 1.6,
+                opacity: active ? 1 : focusNodeId.value != null ? 0.42 : 0.82,
+                dashed: edge.kind === 'related',
+            }
+        })
+        .filter(Boolean)
+})
+
+const renderedArrows = computed(() => renderedConnections.value.filter(item => item.arrow))
+
+const connectPreview = computed(() => {
+    if (!connecting.active || connecting.sourceId == null || !pointerGraph.visible) return null
+
+    const source = getNodeById(connecting.sourceId)
+    if (!source) return null
+
+    const target = { x: pointerGraph.x, y: pointerGraph.y }
+    const start = rectanglePort(source, facingSide(source, target), 0)
+    const dx = target.x - start.x
+    const dy = target.y - start.y
+    const distance = Math.hypot(dx, dy) || 1
+    const spread = clamp(distance * 0.42, 20, 140)
+    const ux = dx / distance
+    const uy = dy / distance
+    const c1 = { x: start.x + start.nx * spread, y: start.y + start.ny * spread }
+    const c2 = { x: target.x - ux * spread, y: target.y - uy * spread }
+
+    return {
+        path: `M ${start.x} ${start.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${target.x} ${target.y}`,
+        x: target.x,
+        y: target.y,
+    }
+})
+
+function isNodeSelected(node) {
+    return selectedNodeIds.value.includes(node.id)
 }
 
-function edgeWidth(edge) {
-    if (edgeActive(edge)) return 2.4
-    return edge.kind === 'topic' ? 2 : 1.6
-}
-
-function edgeOpacity(edge) {
-    if (edgeActive(edge)) return 1
-    return focusNodeId.value != null ? 0.42 : 0.82
-}
-
-function isNodeEmphasized(node) {
+function isPrimaryNode(node) {
     return selectedNodeId.value === node.id
         || detailsNodeId.value === node.id
         || connecting.sourceId === node.id
         || (contextMenu.open && contextMenu.nodeId === node.id)
 }
 
+function isNodeEmphasized(node) {
+    return isNodeSelected(node) || isPrimaryNode(node)
+}
+
 function nodeFill(node) {
-    if (isNodeEmphasized(node)) return '#1E2639'
+    if (isPrimaryNode(node)) return '#1E2639'
+    if (isNodeSelected(node)) return '#1A2131'
     if (isTopLevelTopic(node)) return '#191F2D'
     return '#161A23'
 }
 
 function nodeStroke(node) {
-    if (isNodeEmphasized(node)) return '#7D93FF'
+    if (connecting.sourceId === node.id) return '#F5A623'
+    if (isPrimaryNode(node)) return '#7D93FF'
+    if (isNodeSelected(node)) return '#6379B8'
     if (isTopLevelTopic(node)) return '#3F4F82'
     return '#2A3142'
 }
@@ -359,10 +556,27 @@ function stopPan() {
     window.removeEventListener('pointercancel', stopPan)
 }
 
+function onCanvasPointerMove(event) {
+    if (!connecting.active || connecting.sourceId == null) return
+
+    const point = graphPoint(event.clientX, event.clientY)
+    pointerGraph.x = point.x
+    pointerGraph.y = point.y
+    pointerGraph.visible = true
+}
+
 function startNodeDrag(node, event) {
     if (event.button !== 0) return
     event.stopPropagation()
     closeMenus()
+
+    // Shift-click builds a multi-selection instead of starting a drag, so two
+    // nodes can be linked with C without entering connect mode first.
+    if (event.shiftKey) {
+        if (connecting.active) cancelConnect()
+        toggleShiftSelection(node)
+        return
+    }
 
     const point = graphPoint(event.clientX, event.clientY)
     dragState.value = {
@@ -410,7 +624,7 @@ function stopNodeDrag(event, allowActivate = true) {
 function openDetails(node) {
     if (!node) return
     if (connecting.active || connecting.sourceId != null) cancelConnect()
-    selectedNodeId.value = node.id
+    setSelection([node.id])
     detailsNodeId.value = node.id
     isEditingDetails.value = false
     closeMenus()
@@ -428,6 +642,10 @@ function beginEdit() {
     editDraft.description = node.description
     editDraft.type = node.type
     isEditingDetails.value = true
+    nextTick(() => {
+        editTitleRef.value?.focus()
+        editTitleRef.value?.select()
+    })
 }
 
 function cancelEdit() {
@@ -471,14 +689,16 @@ function addNodeAt(clientX, clientY) {
     closeMenus()
 }
 
-function deleteNode(nodeId) {
+function deleteNode(nodeId, options = {}) {
     const node = getNodeById(nodeId)
     if (!node) return
 
     nodes.value = nodes.value.filter(n => n.id !== nodeId)
     connections.value = connections.value.filter(c => c.from !== nodeId && c.to !== nodeId)
 
-    if (selectedNodeId.value === nodeId) selectedNodeId.value = null
+    if (selectedNodeId.value === nodeId || selectedNodeIds.value.includes(nodeId)) {
+        setSelection(selectedNodeIds.value.filter(id => id !== nodeId))
+    }
     if (detailsNodeId.value === nodeId) closeDetails()
     if (contextMenu.nodeId === nodeId) closeMenus()
     if (connecting.sourceId === nodeId) connecting.sourceId = null
@@ -487,17 +707,30 @@ function deleteNode(nodeId) {
         cancelConnect()
     }
 
-    showToast(`Deleted “${truncate(node.title, 22)}”`)
+    if (!options.silent) showToast(`Deleted “${truncate(node.title, 22)}”`)
 }
 
-function duplicateNode(node) {
-    if (!node) return
+function deleteSelectedNodes() {
+    const ids = [...new Set([
+        ...selectedNodeIds.value,
+        ...(selectedNodeId.value != null ? [selectedNodeId.value] : [])
+    ])].filter(id => getNodeById(id))
+
+    if (!ids.length) return
+
+    ids.forEach(id => deleteNode(id, { silent: true }))
+    showToast(`Deleted ${ids.length} node${ids.length === 1 ? '' : 's'}`)
+}
+
+function duplicateNode(node, options = {}) {
+    if (!node) return null
+    const offset = options.offset || 1
     const copy = {
         ...node,
         id: nextNodeId(),
         title: `${node.title} copy`,
-        x: node.x + 48,
-        y: node.y + 48
+        x: node.x + 48 * offset,
+        y: node.y + 48 * offset
     }
     nodes.value.push(copy)
 
@@ -511,9 +744,27 @@ function duplicateNode(node) {
         })
     }
 
-    selectedNodeId.value = copy.id
+    setSelection([copy.id])
     closeMenus()
-    showToast('Node duplicated')
+    if (!options.silent) showToast('Node duplicated')
+    return copy
+}
+
+function duplicateSelectedNodes() {
+    const ids = selectedNodeIds.value.length
+        ? [...selectedNodeIds.value]
+        : (selectedNodeId.value != null ? [selectedNodeId.value] : [])
+
+    const originals = ids.map(id => getNodeById(id)).filter(Boolean)
+    if (!originals.length) return
+
+    const copies = originals.map((node, index) => duplicateNode(node, {
+        silent: true,
+        offset: index + 1
+    }))
+
+    setSelection(copies.map(copy => copy.id))
+    showToast(copies.length === 1 ? 'Node duplicated' : `${copies.length} nodes duplicated`)
 }
 
 function setNodeType(node, type) {
@@ -544,17 +795,43 @@ function startConnect(sourceId = null) {
     pendingConnection.value = null
     connecting.active = true
     connecting.sourceId = sourceId
+    pointerGraph.visible = false
 }
 
 function cancelConnect() {
     connecting.active = false
     connecting.sourceId = null
     pendingConnection.value = null
+    pointerGraph.visible = false
 }
 
 function toggleConnect() {
-    if (connecting.active) cancelConnect()
-    else startConnect()
+    if (pendingConnection.value) return
+
+    if (connecting.active) {
+        cancelConnect()
+        return
+    }
+
+    const selected = selectedNodeIds.value.filter(id => getNodeById(id))
+
+    if (selected.length >= 2) {
+        pendingConnection.value = { fromId: selected[0], toId: selected[1] }
+        connecting.active = false
+        connecting.sourceId = null
+        pointerGraph.visible = false
+        closeDetails()
+        closeMenus()
+        return
+    }
+
+    if (selected.length === 1) {
+        startConnect(selected[0])
+        showToast('Now click another node to connect')
+        return
+    }
+
+    startConnect()
 }
 
 function activateNode(node) {
@@ -568,6 +845,7 @@ function activateNode(node) {
         pendingConnection.value = { fromId: connecting.sourceId, toId: node.id }
         connecting.active = false
         connecting.sourceId = null
+        pointerGraph.visible = false
         return
     }
 
@@ -579,13 +857,27 @@ function setSubtopic(childId, parentId) {
     const parent = getNodeById(parentId)
     if (!child || !parent || childId === parentId) return
 
-    const existing = pairConnection(childId, parentId)
-    let keepId = existing?.id
+    // Ignore the pair being reassigned; every other topic edge still matters.
+    const withoutPair = connections.value.filter(c => !(
+        c.kind === 'topic'
+        && ((c.from === childId && c.to === parentId) || (c.from === parentId && c.to === childId))
+    ))
 
-    if (existing) {
-        existing.from = parentId
-        existing.to = childId
-        existing.kind = 'topic'
+    if (wouldCreateTopicCycle(withoutPair, parentId, childId)) {
+        showToast(`That would create a loop — “${truncate(parent.title, 18)}” is already inside “${truncate(child.title, 18)}”`)
+        return
+    }
+
+    const existingTopic = connections.value.find(c =>
+        c.kind === 'topic'
+        && ((c.from === parentId && c.to === childId) || (c.from === childId && c.to === parentId))
+    )
+
+    let keepId = existingTopic?.id
+
+    if (existingTopic) {
+        existingTopic.from = parentId
+        existingTopic.to = childId
     } else {
         keepId = nextEdgeId()
         connections.value.push({ id: keepId, from: parentId, to: childId, kind: 'topic' })
@@ -625,6 +917,8 @@ function completeConnection(mode) {
     pendingConnection.value = null
     connecting.active = false
     connecting.sourceId = null
+    pointerGraph.visible = false
+    setSelection([])
 }
 
 function cancelPendingConnection() {
@@ -642,7 +936,7 @@ function openNodeMenu(node, event) {
     event.preventDefault()
     event.stopPropagation()
 
-    selectedNodeId.value = node.id
+    setSelection([node.id])
     contextMenu.nodeId = node.id
     contextMenu.x = Math.max(12, Math.min(event.clientX, window.innerWidth - 292))
     contextMenu.y = Math.max(12, Math.min(event.clientY, window.innerHeight - 470))
@@ -661,6 +955,7 @@ function openCanvasMenu(event) {
 function closeMenus() {
     contextMenu.open = false
     canvasMenu.open = false
+    shortcutsOpen.value = false
 }
 
 function deleteFromContext() {
@@ -673,53 +968,130 @@ function deleteFromContext() {
 function autoArrange() {
     if (!nodes.value.length) return
 
-    const children = new Map()
-    nodes.value.forEach(n => children.set(n.id, []))
+    const ids = nodes.value.map(node => node.id)
+    const idSet = new Set(ids)
+    const children = new Map(ids.map(id => [id, []]))
+    const parents = new Map(ids.map(id => [id, []]))
+    const indegree = new Map(ids.map(id => [id, 0]))
+    const seenEdges = new Set()
 
-    const incoming = new Set()
-    connections.value
-        .filter(c => c.kind === 'topic')
-        .forEach(c => {
-            if (children.has(c.from)) children.get(c.from).push(c.to)
-            incoming.add(c.to)
-        })
+    // Build the topic forest. Duplicate topic edges are ignored.
+    for (const edge of connections.value) {
+        if (edge.kind !== 'topic') continue
+        if (!idSet.has(edge.from) || !idSet.has(edge.to) || edge.from === edge.to) continue
 
-    const roots = nodes.value.filter(n => !incoming.has(n.id)).map(n => n.id)
-    const levels = []
-    const visited = new Set()
-    let queue = roots.length ? roots : nodes.value.map(n => n.id)
-    let depth = 0
+        const key = `${edge.from}:${edge.to}`
+        if (seenEdges.has(key)) continue
+        seenEdges.add(key)
 
-    while (queue.length && depth < 50) {
-        const level = []
-        const next = []
-
-        for (const id of queue) {
-            if (visited.has(id)) continue
-            visited.add(id)
-            level.push(id)
-            for (const childId of children.get(id) || []) {
-                if (!visited.has(childId)) next.push(childId)
-            }
-        }
-
-        if (level.length) levels.push(level)
-        queue = next
-        depth++
+        children.get(edge.from).push(edge.to)
+        parents.get(edge.to).push(edge.from)
+        indegree.set(edge.to, indegree.get(edge.to) + 1)
     }
 
-    const leftovers = nodes.value.map(n => n.id).filter(id => !visited.has(id))
-    if (leftovers.length) levels.push(leftovers)
+    // Kahn's topological sort, also tracking each node's longest-path layer:
+    // every child sits one row below its deepest parent.
+    const level = new Map(ids.map(id => [id, 0]))
+    const queue = ids.filter(id => indegree.get(id) === 0)
+    const order = []
+    let head = 0
+
+    while (head < queue.length) {
+        const id = queue[head]
+        head += 1
+        order.push(id)
+
+        for (const childId of children.get(id) || []) {
+            level.set(childId, Math.max(level.get(childId) || 0, (level.get(id) || 0) + 1))
+
+            const remaining = (indegree.get(childId) || 0) - 1
+            indegree.set(childId, remaining)
+            if (remaining === 0) queue.push(childId)
+        }
+    }
+
+    // Defensive fallback for legacy data that still contains a cycle.
+    const settled = new Set(order)
+    const leftovers = ids.filter(id => !settled.has(id))
+    const fallbackLevel = order.reduce((max, id) => Math.max(max, level.get(id) || 0), 0) + 1
+    leftovers.forEach(id => level.set(id, fallbackLevel))
+
+    const layers = []
+    for (const id of ids) {
+        const row = level.get(id) || 0
+        if (!layers[row]) layers[row] = []
+        layers[row].push(id)
+    }
+    for (let row = 0; row < layers.length; row += 1) {
+        if (!layers[row]) layers[row] = []
+    }
+
+    // Seed every row from the current horizontal order, preserving as much of
+    // the user's arrangement as possible before reducing crossings.
+    layers.forEach(layer => layer.sort((a, b) => {
+        const nodeA = getNodeById(a)
+        const nodeB = getNodeById(b)
+        return (nodeA?.x || 0) - (nodeB?.x || 0) || a - b
+    }))
+
+    const indexInLayer = new Map()
+
+    function refreshIndexes() {
+        layers.forEach(layer => layer.forEach((id, index) => indexInLayer.set(id, index)))
+    }
+
+    function barycenter(id, neighbours) {
+        const positions = (neighbours.get(id) || [])
+            .map(neighbourId => indexInLayer.get(neighbourId))
+            .filter(position => position != null)
+
+        if (!positions.length) return null
+        return positions.reduce((total, position) => total + position, 0) / positions.length
+    }
+
+    function orderLayer(row, neighbours) {
+        const scored = layers[row].map((id, index) => ({
+            id,
+            index,
+            score: barycenter(id, neighbours),
+        }))
+
+        scored.sort((a, b) => {
+            if (a.score == null && b.score == null) return a.index - b.index
+            if (a.score == null) return 1
+            if (b.score == null) return -1
+            return a.score - b.score || a.index - b.index
+        })
+
+        layers[row] = scored.map(item => item.id)
+        layers[row].forEach((id, index) => indexInLayer.set(id, index))
+    }
+
+    refreshIndexes()
+
+    // Alternate downward/upward sweeps, ordering first by parents and then by
+    // children. This is the classic barycenter crossing-reduction heuristic.
+    for (let sweep = 0; sweep < 4; sweep += 1) {
+        if (sweep % 2 === 0) {
+            for (let row = 1; row < layers.length; row += 1) {
+                orderLayer(row, parents)
+            }
+        } else {
+            for (let row = layers.length - 2; row >= 0; row -= 1) {
+                orderLayer(row, children)
+            }
+        }
+    }
 
     const columnWidth = 235
     const rowHeight = 165
 
-    levels.forEach((ids, levelIndex) => {
-        ids.forEach((id, index) => {
+    layers.forEach((layer, row) => {
+        layer.forEach((id, index) => {
             const node = getNodeById(id)
             if (!node) return
-            node.x = (index - (ids.length - 1) / 2) * columnWidth
-            node.y = levelIndex * rowHeight
+            node.x = (index - (layer.length - 1) / 2) * columnWidth
+            node.y = row * rowHeight
         })
     })
 
@@ -764,12 +1136,22 @@ watch(
 
 watch(transform, scheduleSave, { deep: true })
 
+watch(slug, () => {
+    setSelection([])
+    closeDetails()
+    cancelConnect()
+    shortcutsOpen.value = false
+})
+
 // --- Graph metadata -----------------------------------------------------
 function beginTitleEdit() {
     if (!graph.value) return
     graphTitleDraft.value = graph.value.title
     isEditingGraphTitle.value = true
-    nextTick(() => titleInputRef.value?.select())
+    nextTick(() => {
+        titleInputRef.value?.focus()
+        titleInputRef.value?.select()
+    })
 }
 
 function saveTitle() {
@@ -805,9 +1187,18 @@ function isTypingTarget(target) {
     return tag === 'input' || tag === 'textarea' || tag === 'select' || target?.isContentEditable
 }
 
+function editSelectedNode() {
+    const node = selectedNode.value
+    if (!node) return
+    if (detailsNodeId.value !== node.id) openDetails(node)
+    beginEdit()
+}
+
 function onKeyDown(event) {
     if (event.key === 'Escape') {
-        if (contextMenu.open || canvasMenu.open) {
+        if (shortcutsOpen.value) {
+            shortcutsOpen.value = false
+        } else if (contextMenu.open || canvasMenu.open) {
             closeMenus()
         } else if (pendingConnection.value) {
             cancelPendingConnection()
@@ -818,11 +1209,13 @@ function onKeyDown(event) {
         } else if (detailsNodeId.value != null) {
             if (isEditingDetails.value) cancelEdit()
             else closeDetails()
-        } else if (selectedNodeId.value != null) {
-            selectedNodeId.value = null
+        } else if (selectedNodeId.value != null || selectedNodeIds.value.length) {
+            setSelection([])
         }
         return
     }
+
+    if (event.repeat) return
 
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
         event.preventDefault()
@@ -835,9 +1228,49 @@ function onKeyDown(event) {
 
     if (isTypingTarget(event.target)) return
 
-    if ((event.key === 'Delete' || event.key === 'Backspace') && detailsNodeId.value == null && !contextMenu.open && !canvasMenu.open && selectedNodeId.value != null) {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'd') {
+        if (pendingConnection.value || shortcutsOpen.value) return
         event.preventDefault()
-        deleteNode(selectedNodeId.value)
+        duplicateSelectedNodes()
+        return
+    }
+
+    // Plain shortcuts should not fire while a modal or popover owns the screen.
+    if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return
+    if (pendingConnection.value || shortcutsOpen.value) return
+
+    switch (event.key.toLowerCase()) {
+        case 'n':
+            event.preventDefault()
+            addNodeAtCenter()
+            break
+        case 'c':
+            event.preventDefault()
+            toggleConnect()
+            break
+        case 'f':
+            event.preventDefault()
+            fitView()
+            break
+        case 'a':
+            event.preventDefault()
+            autoArrange()
+            break
+        case 'enter':
+            // Let a focused button/link handle its own activation.
+            if (event.target?.closest?.('button, a')) break
+            if (selectedNode.value) {
+                event.preventDefault()
+                editSelectedNode()
+            }
+            break
+        case 'delete':
+        case 'backspace':
+            if (selectedNodeId.value != null || selectedNodeIds.value.length) {
+                event.preventDefault()
+                deleteSelectedNodes()
+            }
+            break
     }
 }
 
@@ -867,7 +1300,18 @@ onUnmounted(() => {
 
 <template>
     <ClientOnly>
-        <div v-if="!graph"
+        <div v-if="!graph && awaitingCloud"
+            class="flex h-screen w-screen flex-col items-center justify-center gap-5 bg-[#0E1117] px-6 geist-400 text-[#F5F4EF]">
+            <span class="h-6 w-6 animate-spin rounded-full border-2 border-[#3155D9]/25 border-t-[#6D86FF]"></span>
+            <div class="max-w-sm text-center">
+                <h1 class="text-lg font-semibold tracking-tight text-white">Looking for your graph…</h1>
+                <p class="mt-2 text-[12px] leading-relaxed text-white/40">
+                    Checking your synced account for <span class="text-white/65">/dashboard/{{ slug }}</span>.
+                </p>
+            </div>
+        </div>
+
+        <div v-else-if="!graph"
             class="flex h-screen w-screen flex-col items-center justify-center gap-6 bg-[#0E1117] px-6 geist-400 text-[#F5F4EF]">
             <div
                 class="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.025]">
@@ -890,7 +1334,7 @@ onUnmounted(() => {
         </div>
 
         <section v-else
-            class="flex h-screen w-screen select-none flex-col overflow-hidden bg-[#0c0c0d] geist-400 text-[#F5F4EF]">
+            class="relative flex h-screen w-screen select-none flex-col overflow-hidden bg-[#0c0c0d] geist-400 text-[#F5F4EF]">
             <!-- Top navigation -->
             <header class="relative z-30 h-16 shrink-0 border-b border-white/[0.07] bg-[#111113]/90 backdrop-blur-xl">
                 <div class="flex h-full items-center gap-3 px-4 md:px-5">
@@ -916,7 +1360,7 @@ onUnmounted(() => {
                     <div class="ml-auto flex min-w-0 items-center gap-2">
                         <div class="flex items-center gap-1 p-1">
                             <button @click="addNodeAtCenter" :class="[toolClass, toolIdleClass]"
-                                title="Add a node at the centre of the canvas">
+                                title="Add a node at the centre of the canvas (N)">
                                 <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M12 5v14m-7-7h14" />
@@ -926,7 +1370,7 @@ onUnmounted(() => {
 
                             <button @click="toggleConnect"
                                 :class="[toolClass, connecting.active ? toolActiveClass : toolIdleClass]"
-                                :title="connecting.active ? 'Cancel connecting' : 'Connect two nodes'">
+                                :title="connecting.active ? 'Cancel connecting (C)' : 'Connect two nodes (C)'">
                                 <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M13.828 10.172a4 4 0 00-5.656 0l-2.343 2.343a4 4 0 105.657 5.657l1.414-1.415m-1.415-8.485l1.415-1.414a4 4 0 115.657 5.657l-2.343 2.343a4 4 0 01-5.657 0" />
@@ -960,10 +1404,24 @@ onUnmounted(() => {
                                 </svg>
                                 <span class="hidden sm:inline">Export .fl</span>
                             </button>
+
+                            <button @click="shortcutsOpen = !shortcutsOpen"
+                                :class="[toolClass, shortcutsOpen ? toolActiveClass : toolIdleClass]"
+                                title="Keyboard shortcuts">
+                                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
+                                        d="M5 8h14M5 12h14M5 16h14M8 5v14m8-14v14M5 5h14a1 1 0 011 1v12a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1z" />
+                                </svg>
+                                <span class="hidden sm:inline">Shortcuts</span>
+                            </button>
                         </div>
 
                         <span v-if="saveState === 'saving'"
                             class="hidden text-[10px] text-white/30 md:block">Saving…</span>
+                        <span v-else-if="isCloud && cloudStatus === 'syncing'"
+                            class="hidden text-[10px] text-[#8CA4FF]/70 md:block">Syncing…</span>
+                        <span v-else-if="isCloud && cloudStatus === 'synced'"
+                            class="hidden text-[10px] text-white/30 md:block">Synced</span>
 
                         <transition enter-active-class="transition duration-150 ease-out"
                             enter-from-class="translate-y-1 opacity-0"
@@ -988,6 +1446,42 @@ onUnmounted(() => {
                     </div>
                 </div>
             </header>
+
+            <transition enter-active-class="transition duration-150 ease-out"
+                enter-from-class="-translate-y-1 opacity-0" leave-active-class="transition duration-100 ease-in"
+                leave-to-class="-translate-y-1 opacity-0">
+                <div v-if="shortcutsOpen"
+                    class="absolute right-4 top-[68px] z-40 w-[292px] rounded-xl border border-white/[0.09] bg-[#12141A]/95 p-4 backdrop-blur-md"
+                    @pointerdown.stop>
+                    <div class="flex items-center justify-between">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/35">
+                            Keyboard shortcuts
+                        </p>
+                        <button @click="shortcutsOpen = false" title="Close"
+                            class="rounded-md p-1 text-white/30 transition-colors hover:bg-white/[0.05] hover:text-white">
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
+                                    d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="mt-3 space-y-2.5">
+                        <div v-for="shortcut in shortcutRows" :key="shortcut.keys"
+                            class="flex items-center justify-between gap-4 text-[11.5px] text-white/50">
+                            <span>{{ shortcut.label }}</span>
+                            <kbd
+                                class="shrink-0 rounded border border-white/[0.09] bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] text-white/65">
+                                {{ shortcut.keys }}
+                            </kbd>
+                        </div>
+                    </div>
+
+                    <p class="mt-3 border-t border-white/[0.06] pt-3 text-[10.5px] leading-relaxed text-white/30">
+                        Shift-click two nodes, then press C to connect them.
+                    </p>
+                </div>
+            </transition>
 
             <div class="flex min-h-0 flex-1">
                 <!-- Workspace sidebar -->
@@ -1084,30 +1578,35 @@ onUnmounted(() => {
                 <!-- Canvas -->
                 <main ref="canvasRef" class="relative min-w-0 flex-1 touch-none overflow-hidden"
                     :class="isPanning ? 'cursor-grabbing' : 'cursor-grab'" @pointerdown="onCanvasPointerDown"
-                    @wheel.prevent="handleWheel" @contextmenu.prevent="openCanvasMenu">
+                    @pointermove="onCanvasPointerMove" @wheel.prevent="handleWheel"
+                    @contextmenu.prevent="openCanvasMenu">
                     <div class="pointer-events-none absolute inset-0"></div>
 
                     <svg class="pointer-events-none absolute inset-0 h-full w-full overflow-visible">
-                        <defs>
-                            <marker id="graph-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6"
-                                markerHeight="6" orient="auto-start-reverse">
-                                <path d="M0,0 L10,5 L0,10 z" fill="#3D4760" />
-                            </marker>
-                            <marker id="graph-arrow-active" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6"
-                                markerHeight="6" orient="auto-start-reverse">
-                                <path d="M0,0 L10,5 L0,10 z" fill="#6D86FF" />
-                            </marker>
-                        </defs>
-
                         <g :transform="`translate(${transform.x} ${transform.y}) scale(${transform.zoom})`">
                             <!-- Connections -->
                             <g fill="none">
-                                <path v-for="edge in connections" :key="edge.id" :d="getEdgePath(edge)"
-                                    :stroke="edgeStroke(edge)" :stroke-width="edgeWidth(edge)"
-                                    :stroke-opacity="edgeOpacity(edge)"
-                                    :stroke-dasharray="edge.kind === 'related' ? '5 7' : null"
-                                    :marker-end="edge.kind === 'topic' ? `url(#${edgeActive(edge) ? 'graph-arrow-active' : 'graph-arrow'})` : null"
+                                <path v-for="item in renderedConnections" :key="item.id" :d="item.path"
+                                    :stroke="item.color" :stroke-width="item.width"
+                                    :stroke-opacity="item.opacity"
+                                    :stroke-dasharray="item.dashed ? '5 7' : null"
+                                    stroke-linecap="round"
                                     class="transition-all duration-150" />
+                            </g>
+
+                            <!-- Arrowheads, aligned to each curve's real end tangent -->
+                            <g>
+                                <polygon v-for="item in renderedArrows" :key="`arrow-${item.id}`" :points="item.arrow"
+                                    :fill="item.color" :fill-opacity="item.opacity"
+                                    class="transition-all duration-150" />
+                            </g>
+
+                            <!-- Live connector preview while choosing a target -->
+                            <g v-if="connectPreview">
+                                <path :d="connectPreview.path" fill="none" stroke="#F5A623" stroke-width="1.6"
+                                    stroke-dasharray="6 6" stroke-opacity="0.9" stroke-linecap="round" />
+                                <circle :cx="connectPreview.x" :cy="connectPreview.y" r="4" fill="#141A2B"
+                                    stroke="#F5A623" stroke-width="1.6" />
                             </g>
 
                             <!-- Nodes -->
@@ -1120,12 +1619,13 @@ onUnmounted(() => {
                                 <!-- Hover / selection halo -->
                                 <rect v-if="isNodeEmphasized(node)" :x="-NODE_W / 2 - 5" :y="-NODE_H / 2 - 5"
                                     :width="NODE_W + 10" :height="NODE_H + 10" rx="16" fill="none"
-                                    :stroke="connecting.sourceId === node.id ? '#F5A623' : '#4D65D8'" stroke-width="1.5"
-                                    class="opacity-75" />
+                                    :stroke="connecting.sourceId === node.id ? '#F5A623' : isPrimaryNode(node) ? '#7D93FF' : '#6379B8'"
+                                    :stroke-width="isPrimaryNode(node) ? 1.5 : 1"
+                                    :stroke-opacity="isPrimaryNode(node) ? 0.8 : 0.55" />
 
                                 <rect
                                     :class="isNodeEmphasized(node) ? 'transition-colors' : 'transition-colors group-hover:stroke-[#4A5570]'"
-                                    :x="-NODE_W / 2" :y="-NODE_H / 2" :width="NODE_W" :height="NODE_H" rx="13"
+                                    :x="-NODE_W / 2" :y="-NODE_H / 2" :width="NODE_W" :height="NODE_H" :rx="NODE_RADIUS"
                                     :fill="nodeFill(node)" :stroke="nodeStroke(node)" stroke-width="1.5" />
 
                                 <!-- Main-topic accent -->
@@ -1172,8 +1672,8 @@ onUnmounted(() => {
                             </span>
                             <h2 class="mt-4 text-[15px] font-semibold text-white/85">This graph is empty</h2>
                             <p class="mt-1.5 text-[11.5px] leading-relaxed text-white/35">
-                                Add your first node, then drag it around the canvas and connect it to
-                                everything it belongs with.
+                                Add your first node or press <span class="text-white/55">N</span>. Then drag it
+                                around the canvas and press <span class="text-white/55">C</span> to connect it.
                             </p>
                             <button @click="addNodeAtCenter"
                                 class="mt-5 inline-flex items-center gap-1.5 rounded-lg bg-[#3155D9] px-3.5 py-2 text-[11.5px] font-semibold text-white transition-colors hover:bg-[#3E63E8]">
@@ -1200,7 +1700,9 @@ onUnmounted(() => {
                             </span>
                             <p class="text-[11px] text-white/65">
                                 <template v-if="!connectSourceNode">
-                                    Click the <span class="font-semibold text-white">first node</span> to connect.
+                                    Click the <span class="font-semibold text-white">first node</span> to connect, or
+                                    <span class="font-semibold text-white">shift-click two nodes</span> and press
+                                    <kbd class="rounded border border-white/10 px-1 font-mono text-[10px]">C</kbd>.
                                 </template>
                                 <template v-else>
                                     From <span class="font-semibold text-[#A9B8FF]">{{ truncate(connectSourceNode.title,
@@ -1313,7 +1815,7 @@ onUnmounted(() => {
                                 <div v-if="isEditingDetails" class="space-y-5">
                                     <div>
                                         <label :class="fieldLabelClass">Node Title</label>
-                                        <input v-model="editDraft.title" :class="fieldClass"
+                                        <input ref="editTitleRef" v-model="editDraft.title" :class="fieldClass"
                                             placeholder="e.g., Cell membrane" @keydown.enter.prevent="saveEdit" />
                                     </div>
 
@@ -1405,9 +1907,9 @@ onUnmounted(() => {
                                         </div>
 
                                         <p v-else class="text-[12px] text-white/30">
-                                            No links yet. Use <span class="text-white/50">Connect</span> in the top bar
-                                            to link
-                                            nodes.
+                                            No links yet. Press <span class="text-white/50">C</span> with this node
+                                            selected, then click another — or shift-click two nodes and press
+                                            <span class="text-white/50">C</span>.
                                         </p>
                                     </div>
                                 </div>

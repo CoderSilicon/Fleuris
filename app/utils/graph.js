@@ -13,6 +13,12 @@ export const GRAPH_FILE_FORMAT = 'fleuris.graph'
 export const GRAPH_FILE_VERSION = 1
 export const GRAPH_FILE_EXTENSION = '.fl'
 export const GRAPH_STORAGE_KEY = 'fleuris.graphs.v1'
+
+// Account-scoped copies. The generic key above remains for backwards
+// compatibility; these keep local and cloud libraries separate.
+export const LOCAL_GRAPH_STORAGE_KEY = 'fleuris.graphs.local.v1'
+export const CLOUD_GRAPH_STORAGE_KEY = 'fleuris.graphs.cloud.v1'
+
 export const GRAPH_SEED_KEY = 'fleuris.graphs.seeded'
 
 const MAX_NODE_COORDINATE = 1_000_000
@@ -82,6 +88,108 @@ export function normalizeView(rawView) {
     y: Math.max(-100_000, Math.min(100_000, y)),
     zoom: Math.max(0.2, Math.min(3, zoom)),
   }
+}
+
+/**
+ * Build an adjacency list for topic edges: parent -> [children].
+ * Used for hierarchy checks and topological ordering.
+ */
+export function topicAdjacency(connections = []) {
+    const adjacency = new Map()
+
+    for (const edge of connections) {
+        if (edge?.kind !== 'topic') continue
+        if (!adjacency.has(edge.from)) adjacency.set(edge.from, [])
+        adjacency.get(edge.from).push(edge.to)
+    }
+
+    return adjacency
+}
+
+/**
+ * Depth-first search over topic edges.
+ * Answers: can we travel from `fromId` to `toId` by following parent -> child links?
+ */
+export function hasTopicPath(connections = [], fromId, toId) {
+    if (fromId == null || toId == null) return false
+    if (fromId === toId) return true
+
+    const adjacency = topicAdjacency(connections)
+    const stack = [fromId]
+    const visited = new Set()
+
+    while (stack.length) {
+        const current = stack.pop()
+        if (visited.has(current)) continue
+        visited.add(current)
+
+        for (const next of adjacency.get(current) || []) {
+            if (next === toId) return true
+            if (!visited.has(next)) stack.push(next)
+        }
+    }
+
+    return false
+}
+
+/**
+ * Adding parent -> child would create a cycle if child can already reach parent.
+ */
+export function wouldCreateTopicCycle(connections = [], parentId, childId) {
+    return hasTopicPath(connections, childId, parentId)
+}
+
+/**
+ * Keeps topic hierarchy valid for documents coming from older/edited files:
+ * - one main topic per node
+ * - no cycles in the topic tree/forest
+ */
+export function normalizeTopicHierarchy(connections = []) {
+    const topicEdges = connections.filter(edge => edge?.kind === 'topic')
+    const otherEdges = connections.filter(edge => edge?.kind !== 'topic')
+
+    const accepted = []
+    const assignedParent = new Set()
+
+    // Incremental adjacency list of the edges accepted so far.
+    const children = new Map()
+
+    // Iterative DFS: can we already travel from `fromId` down to `toId`?
+    function canReach(fromId, toId) {
+        if (fromId === toId) return true
+
+        const stack = [fromId]
+        const visited = new Set()
+
+        while (stack.length) {
+            const current = stack.pop()
+            if (visited.has(current)) continue
+            visited.add(current)
+
+            for (const next of children.get(current) || []) {
+                if (next === toId) return true
+                if (!visited.has(next)) stack.push(next)
+            }
+        }
+
+        return false
+    }
+
+    for (const edge of topicEdges) {
+        if (edge.from === edge.to) continue
+        if (assignedParent.has(edge.to)) continue
+        if (canReach(edge.to, edge.from)) continue
+
+        assignedParent.add(edge.to)
+        accepted.push(edge)
+
+        if (!children.has(edge.from)) children.set(edge.from, [])
+        children.get(edge.from).push(edge.to)
+    }
+
+    return [...accepted, ...otherEdges]
+        .sort((a, b) => (Number(a.id) || 0) - (Number(b.id) || 0))
+        .map((edge, index) => ({ ...edge, id: index + 1 }))
 }
 
 export function normalizeGraph(input, { slug: forcedSlug } = {}) {
@@ -162,7 +270,7 @@ export function normalizeGraph(input, { slug: forcedSlug } = {}) {
     title,
     description: asString(source.description ?? ''),
     nodes,
-    connections,
+    connections: normalizeTopicHierarchy(connections),
     view: normalizeView(source),
     createdAt: asDate(source.createdAt, now),
     updatedAt: asDate(source.updatedAt, now),

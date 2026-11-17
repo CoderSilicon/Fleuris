@@ -4,10 +4,6 @@
 
 fleurıs is actively evolving. Security fixes are generally applied to the latest version of the project.
 
-| Version | Supported |
-| --- | --- |
-| Latest | Yes |
-| Older versions | Best effort |
 
 ## Reporting a vulnerability
 

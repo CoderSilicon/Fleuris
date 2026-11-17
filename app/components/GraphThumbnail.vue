@@ -11,6 +11,10 @@ const props = defineProps({
   connections: { type: Array, default: () => [] },
 })
 
+function nodeRadius(node) {
+  return node?.type === 'Concept' ? 3.5 : 2.8
+}
+
 const layout = computed(() => {
   if (!props.nodes.length) return null
 
@@ -38,6 +42,7 @@ const layout = computed(() => {
     props.nodes.map(node => [
       node.id,
       {
+        node,
         x: (Number(node.x) || 0) * scale + offsetX,
         y: (Number(node.y) || 0) * scale + offsetY,
       },
@@ -51,12 +56,25 @@ const layout = computed(() => {
 
       if (!from || !to) return null
 
+      const dx = to.x - from.x
+      const dy = to.y - from.y
+      const distance = Math.hypot(dx, dy)
+
+      if (!distance) return null
+
+      // Stop each line at the visible circle edge instead of running it
+      // through the middle of the node.
+      const ux = dx / distance
+      const uy = dy / distance
+      const fromRadius = nodeRadius(from.node) + 0.5
+      const toRadius = nodeRadius(to.node) + 1.2
+
       return {
         ...connection,
-        x1: from.x,
-        y1: from.y,
-        x2: to.x,
-        y2: to.y,
+        x1: from.x + ux * fromRadius,
+        y1: from.y + uy * fromRadius,
+        x2: to.x - ux * toRadius,
+        y2: to.y - uy * toRadius,
       }
     })
     .filter(Boolean)
@@ -98,7 +116,7 @@ function nodeColor(node) {
         :key="node.id"
         :cx="layout.positions.get(node.id)?.x"
         :cy="layout.positions.get(node.id)?.y"
-        :r="node.type === 'Concept' ? 3.5 : 2.8"
+        :r="nodeRadius(node)"
         :fill="nodeColor(node)"
       />
     </g>

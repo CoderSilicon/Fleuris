@@ -1,6 +1,4 @@
-<script setup>
-useHead({ title: 'About — fleurıs' })
-</script>
+
 
 <template>
   <div class="w-full px-6 py-12 md:px-12 md:py-16 lg:px-20">
@@ -17,19 +15,20 @@ useHead({ title: 'About — fleurıs' })
 
         <div class="border-l-2 border-[#3155D9] bg-[#3155D9]/[0.04] px-5 py-4">
           <p class="text-sm leading-relaxed text-neutral-700 geist-400 md:text-base">
-           It is an <span class="geist-500 text-[#17191F]">independent project created by its author</span> — someone who wanted a calmer, more personal way to work with ideas.
-            So, instead of building another place to simply store notes, the goal was to build a space where thoughts can stay connected to the reasons they mattered in the first place.
+           It is an <span class="geist-500 text-[#17191F]">independent project created by someone</span> who wanted a calmer, more personal way to work with ideas and concepts.
+            So, instead of building another place to simply store notes, it built a space where ideas can connect to the reasons they mattered in the first place.
           </p>
         </div>
 
         <p class="text-sm leading-relaxed text-neutral-600 geist-400 md:text-base">
-          The author’s focus with fleurıs is simple: make thinking feel less scattered. When you learn something new, it often reminds you of an old question, a useful source, or a task you meant to do.
-          fleurıs was shaped around that everyday experience — the feeling that ideas do not arrive in neat folders, they arrive in links.
+          The author’s focus with fleurıs is simple: make thinking feel less scattered. When you learn something new, it often reminds you of an old question, a useful source, or a task you were meant to do.
+          fleurıs was shaped around that experience — the feeling that ideas do not arrive in neat folders, they never can.
         </p>
 
         <p class="text-sm leading-relaxed text-neutral-600 geist-400 md:text-base">
           That is also why the project leans toward being <span class="rounded bg-[#3155D9]/[0.08] px-1.5 py-0.5 geist-500 text-[#2445BB]">local-first</span> and easy to understand.
-          The author wanted a tool that feels like it belongs to the person using it: your graphs live with you, you can keep copies as files, and the interface tries to stay quiet so your attention stays on what you are thinking about not of cloud first
+          The author wanted a tool that feels like it belongs to the person using it: your graphs live with you, you can keep copies as files, and the interface tries to stay quiet so your attention stays on what you are thinking about; not cloud first.
+          An account is there when you want one, only to carry the same graphs between devices.
         </p>
       </section>
 
