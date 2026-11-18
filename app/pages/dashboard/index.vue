@@ -219,8 +219,7 @@ function confirmDelete() {
   <ClientOnly>
     <section class="min-h-screen bg-[#0c0c0d] geist-400 text-[#F5F4EF]" @dragover.prevent @drop.prevent="onDrop">
       <main class="mx-auto w-full max-w-7xl px-5 pb-24 pt-7 md:px-8 md:pt-9">
-        <input ref="fileInput" type="file" accept=".fl,application/json,.json" class="hidden"
-          @change="onFileChange" />
+        <input ref="fileInput" type="file" accept=".fl,application/json,.json" class="hidden" @change="onFileChange" />
 
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div class="flex items-center gap-2">
@@ -270,8 +269,8 @@ function confirmDelete() {
             <p v-else class="mt-4 max-w-lg text-[13px] leading-relaxed text-white/40">
               Set up an account to continue. Open a graph, start a new one, or carry one between
               machines with a <span class="font-medium text-white/65">.fl</span> file.
-              <NuxtLink to="/login?redirect=/dashboard"
-                class="text-[#8CA4FF] transition-colors hover:text-white">Sign in</NuxtLink>.
+              <NuxtLink to="/login?redirect=/dashboard" class="text-[#8CA4FF] transition-colors hover:text-white">Sign
+                in</NuxtLink>.
             </p>
           </div>
 
@@ -437,134 +436,121 @@ function confirmDelete() {
         <transition enter-active-class="transition duration-150 ease-out" enter-from-class="scale-[0.98] opacity-0"
           leave-active-class="transition duration-100 ease-in" leave-to-class="scale-[0.98] opacity-0">
           <div v-if="createOpen" class="fixed inset-0 z-[70] flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-black/65 backdrop-blur-[2px]" @pointerdown="closeCreate"></div>
+            <!-- Semi-transparent flat dark backdrop -->
+            <div class="absolute inset-0 bg-[#050608]/80" @pointerdown="closeCreate"></div>
 
-            <form
-              class="relative w-full max-w-[480px] overflow-hidden rounded-[24px] border border-white/[0.09] bg-[#141821] shadow-2xl shadow-black/60"
-              @pointerdown.stop @submit.prevent="submitCreate">
-              <div
-                class="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#3155D9]/15 to-transparent">
+            <!-- Modal Box -->
+            <div
+              class="relative w-full max-w-[440px] rounded-2xl border border-white/[0.08] bg-[#111319]/90 p-6 backdrop-blur-md"
+              @pointerdown.stop>
+              <div class="flex items-start gap-4">
+                <div class="min-w-0 flex-1">
+                  <h2 class="text-[18px] font-semibold tracking-[-0.02em] text-white">Start a fresh canvas</h2>
+                  <p class="mt-1 text-[12px] leading-relaxed text-white/45">
+                    Give it a name and a slug. You can add nodes and links right after.
+                  </p>
+                </div>
               </div>
 
-              <div class="relative border-b border-white/[0.07] px-6 pb-5 pt-6">
-                <p class="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#8CA4FF]/70">New graph</p>
-                <h2 class="mt-1.5 text-[22px] font-semibold tracking-tight text-white">Start a fresh canvas</h2>
-                <p class="mt-2 text-[11.5px] leading-relaxed text-white/35">
-                  Give it a name and a slug. You can add nodes and links right after.
-                </p>
-              </div>
-
-              <div class="relative space-y-4 px-6 py-5">
+              <!-- Form Fields -->
+              <form class="mt-5 space-y-4" @submit.prevent="submitCreate">
                 <div>
-                  <label class="mb-1.5 block text-[9px] font-medium uppercase tracking-[0.12em] text-white/30">
-                    Name
-                  </label>
+                  <label class="mb-1.5 block text-[11px] font-medium text-white/60">Name</label>
                   <input ref="titleInput" v-model="form.title" maxlength="80" placeholder="e.g. Systems thinking"
-                    class="w-full rounded-lg border border-white/[0.08] bg-white/[0.045] px-3 py-2.5 text-[12.5px] text-white outline-none transition-colors placeholder:text-white/20 focus:border-[#3155D9]/60 focus:bg-[#3155D9]/[0.08]" />
+                    class="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3.5 py-2.5 text-[12.5px] text-white outline-none transition-colors placeholder:text-white/20 focus:border-[#4B6BFF]/60 focus:bg-white/[0.05]" />
                 </div>
 
                 <div>
-                  <label class="mb-1.5 block text-[9px] font-medium uppercase tracking-[0.12em] text-white/30">
-                    Slug
-                  </label>
+                  <label class="mb-1.5 block text-[11px] font-medium text-white/60">Slug</label>
                   <div
-                    class="flex items-stretch overflow-hidden rounded-lg border border-white/[0.08] bg-white/[0.045] focus-within:border-[#3155D9]/60">
+                    class="flex items-stretch overflow-hidden rounded-xl border border-white/[0.08] bg-white/[0.03] transition-colors focus-within:border-[#4B6BFF]/60 focus-within:bg-white/[0.05]">
                     <span
-                      class="flex shrink-0 items-center border-r border-white/[0.07] px-3 text-[11px] text-white/25">
+                      class="flex shrink-0 items-center border-r border-white/[0.06] px-3 font-mono text-[11px] text-white/35">
                       /dashboard/
                     </span>
                     <input v-model="form.slug" maxlength="64" placeholder="systems-thinking"
                       @input="form.slugTouched = true"
-                      class="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-[12.5px] text-white/80 outline-none placeholder:text-white/20" />
+                      class="min-w-0 flex-1 bg-transparent px-3 py-2.5 font-mono text-[12px] text-white outline-none placeholder:text-white/20" />
                   </div>
-                  <p class="mt-1.5 truncate text-[10px] text-white/25">
-                    Opens at <span class="text-white/40">/dashboard/{{ slugPreview }}</span>
-                    <span v-if="graphs.some((graph) => graph.slug === slugPreview)" class="text-[#F5A623]/70">
+                  <p class="mt-1.5 truncate text-[10.5px] text-white/40">
+                    Opens at <span class="font-mono text-white/70">/dashboard/{{ slugPreview }}</span>
+                    <span v-if="graphs.some((graph) => graph.slug === slugPreview)" class="text-amber-400/80">
                       · name already used, a number will be added
                     </span>
                   </p>
                 </div>
 
                 <div>
-                  <label class="mb-1.5 block text-[9px] font-medium uppercase tracking-[0.12em] text-white/30">
-                    Description <span class="normal-case tracking-normal text-white/20">(optional)</span>
+                  <label class="mb-1.5 block text-[11px] font-medium text-white/60">
+                    Description <span class="font-normal text-white/30">(optional)</span>
                   </label>
-                  <textarea v-model="form.description" rows="3" maxlength="240" placeholder="What is this graph for?"
-                    class="w-full resize-none rounded-lg border border-white/[0.08] bg-white/[0.045] px-3 py-2.5 text-[12.5px] leading-relaxed text-white outline-none transition-colors placeholder:text-white/20 focus:border-[#3155D9]/60 focus:bg-[#3155D9]/[0.08]"></textarea>
+                  <textarea v-model="form.description" rows="2" maxlength="240" placeholder="What is this graph for?"
+                    class="w-full resize-none rounded-xl border border-white/[0.08] bg-white/[0.03] px-3.5 py-2.5 text-[12.5px] leading-relaxed text-white outline-none transition-colors placeholder:text-white/20 focus:border-[#4B6BFF]/60 focus:bg-white/[0.05]"></textarea>
                 </div>
 
-                <p v-if="formError" class="text-[11px] text-red-300/80">{{ formError }}</p>
-              </div>
+                <p v-if="formError" class="text-[11.5px] text-red-400">{{ formError }}</p>
 
-              <div class="relative flex items-center justify-end gap-2 border-t border-white/[0.07] px-6 py-4">
-                <button type="button" @click="closeCreate"
-                  class="rounded-lg border border-white/[0.08] px-3.5 py-2 text-[11px] font-medium text-white/45 transition-colors hover:bg-white/[0.04] hover:text-white">
-                  Cancel
-                </button>
-                <button type="submit" :disabled="!canCreate || creating"
-                  class="rounded-lg bg-[#3155D9] px-4 py-2 text-[11px] font-semibold text-white transition-colors hover:bg-[#3E63E8] disabled:cursor-not-allowed disabled:opacity-40">
-                  {{ creating ? 'Creating…' : 'Create graph' }}
-                </button>
-              </div>
-            </form>
+                <div class="mt-6 flex justify-end gap-2 pt-2">
+                  <button type="button" @click="closeCreate"
+                    class="rounded-lg border border-white/[0.08] px-3.5 py-1.5 text-[11.5px] font-medium text-white/50 transition-colors hover:bg-white/[0.04] hover:text-white">
+                    Cancel
+                  </button>
+                  <button type="submit" :disabled="!canCreate || creating"
+                    class="rounded-lg bg-[#4B6BFF] px-4 py-1.5 text-[11.5px] font-medium text-white transition-colors hover:bg-[#5B78FF] disabled:cursor-not-allowed disabled:opacity-40">
+                    {{ creating ? 'Creating…' : 'Create graph' }}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </transition>
       </Teleport>
-
       <!-- Delete graph -->
-<Teleport to="body">
-    <transition
-        enter-active-class="transition duration-150 ease-out"
-        enter-from-class="scale-[0.98] opacity-0"
-        leave-active-class="transition duration-100 ease-in"
-        leave-to-class="scale-[0.98] opacity-0"
-    >
-        <div v-if="deleteTarget" class="fixed inset-0 z-[75] flex items-center justify-center p-4">
+      <Teleport to="body">
+        <transition enter-active-class="transition duration-150 ease-out" enter-from-class="scale-[0.98] opacity-0"
+          leave-active-class="transition duration-100 ease-in" leave-to-class="scale-[0.98] opacity-0">
+          <div v-if="deleteTarget" class="fixed inset-0 z-[75] flex items-center justify-center p-4">
             <!-- Semi-transparent flat dark backdrop -->
             <div class="absolute inset-0 bg-[#050608]/80 backdrop-blur-sm" @pointerdown="deleteTarget = null"></div>
 
             <!-- Modal Box -->
             <div
-                class="relative w-full max-w-[420px] rounded-2xl border border-white/[0.08] bg-[#111319]/90 p-6 backdrop-blur-md"
-                @pointerdown.stop
-            >
-                <div class="flex items-start gap-4">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/[0.08] text-red-400">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
-                                d="M4 7h16M10 11v6m4-6v6M5 7l1 13h12l1-13M9 7V4h6v3" />
-                        </svg>
-                    </span>
+              class="relative w-full max-w-[420px] rounded-2xl border border-white/[0.08] bg-[#111319]/90 p-6 backdrop-blur-md"
+              @pointerdown.stop>
+              <div class="flex items-start gap-4">
+                <span
+                  class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/[0.08] text-red-400">
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
+                      d="M4 7h16M10 11v6m4-6v6M5 7l1 13h12l1-13M9 7V4h6v3" />
+                  </svg>
+                </span>
 
-                    <div class="min-w-0 flex-1">
-                        <h2 class="text-[18px] font-semibold tracking-[-0.02em] text-white">Delete this graph?</h2>
-                        <p class="mt-1.5 text-[12px] leading-relaxed text-white/45">
-                            <span class="font-medium text-white/80">“{{ deleteTarget.title }}”</span>
-                            and all of its nodes, links, and saved canvas positions will be removed from
-                            {{ isCloud ? 'this device and your synced account' : 'this browser' }}. This
-                            cannot be undone.
-                        </p>
-                    </div>
+                <div class="min-w-0 flex-1">
+                  <h2 class="text-[18px] font-semibold tracking-[-0.02em] text-white">Delete this graph?</h2>
+                  <p class="mt-1.5 text-[12px] leading-relaxed text-white/45">
+                    <span class="font-medium text-white/80">“{{ deleteTarget.title }}”</span>
+                    and all of its nodes, links, and saved canvas positions will be removed from
+                    {{ isCloud ? 'this device and your synced account' : 'this browser' }}. This
+                    cannot be undone.
+                  </p>
                 </div>
+              </div>
 
-                <div class="mt-6 flex justify-end gap-2">
-                    <button
-                        @click="deleteTarget = null"
-                        class="rounded-lg border border-white/[0.08] px-3.5 py-1.5 text-[11.5px] font-medium text-white/50 transition-colors hover:bg-white/[0.04] hover:text-white"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        @click="confirmDelete"
-                        class="rounded-lg bg-red-500/85 px-3.5 py-1.5 text-[11.5px] font-medium text-white transition-colors hover:bg-red-500"
-                    >
-                        Delete graph
-                    </button>
-                </div>
+              <div class="mt-6 flex justify-end gap-2">
+                <button @click="deleteTarget = null"
+                  class="rounded-lg border border-white/[0.08] px-3.5 py-1.5 text-[11.5px] font-medium text-white/50 transition-colors hover:bg-white/[0.04] hover:text-white">
+                  Cancel
+                </button>
+                <button @click="confirmDelete"
+                  class="rounded-lg bg-red-500/85 px-3.5 py-1.5 text-[11.5px] font-medium text-white transition-colors hover:bg-red-500">
+                  Delete graph
+                </button>
+              </div>
             </div>
-        </div>
-    </transition>
-</Teleport>
+          </div>
+        </transition>
+      </Teleport>
       <!-- Toast -->
       <Teleport to="body">
         <transition enter-active-class="transition duration-200 ease-out" enter-from-class="translate-y-2 opacity-0"
