@@ -1,113 +1,88 @@
-# fleurıs
+  # Fleuris
+![Nuxt](https://img.shields.io/badge/Nuxt-17191F?style=flat-square&logo=nuxt.js&logoColor=8CA4FF)
+![Local-First](https://img.shields.io/badge/Local--First-3155D9?style=flat-square)
+![Supabase Optional](https://img.shields.io/badge/Optional_Cloud_Sync-17191F?style=flat-square&logo=supabase&logoColor=8CA4FF)
 
-fleurıs is a calm space for connected thinking.
 
-When your ideas live in separate notes, lists, or folders, it’s easy to save things but hard to see how they belong together. A concept might sit in one place, a question in another, and a useful resource somewhere else — and the relationship between them gets lost. fleurıs helps solve that by letting you place ideas on a graph, so the links between them stay clear and easy to revisit.
+<br />
+
+When your ideas live in separate notes, lists, or folders, it’s easy to save things—but hard to see how they fit together. A concept sits in one doc, a question in another, and a useful link somewhere else, leaving the bigger picture buried. **fleurıs** lets you map your thoughts out visually so the connections between them stay clear, meaningful, and uniquely yours.
+
+<br />
 
 ## What fleurıs helps you do
 
-- **Keep context:** connect a note to the question, source, or task that gives it meaning.
-- **See the bigger picture:** turn scattered thoughts into a map you can explore.
-- **Follow your thinking naturally:** ideas don’t always fit in one folder — in fleurıs, one idea can connect to many others.
-- **Start simply:** open the app, create a graph, add ideas, and draw connections.
-- **Stay in control:** your work stays with you, and you can keep a personal copy of a graph as a file whenever you want.
+- **Connect a point of view** — Link notes, questions, and sources together so you can see how isolated fragments form a coherent stance.
+- **Keep the context** — Tie every thought to the question, reference, or task that gave it meaning in the first place.
+- **Think without rigid folders** — Ideas rarely belong in just one box; let a single note connect to as many threads as it naturally touches.
+- **Start in seconds** — Open the app, create a graph, drop in your ideas, and start drawing connections—no setup required.
+- **Stay in control** — Your work stays yours. Keep everything locally in your browser and export a personal copy of any graph whenever you want.
 
-## How to use it (simply)
+---
 
-1. **Create a graph** for a topic, project, or question you care about.
-2. **Add the pieces** — ideas, resources, questions, and tasks.
-3. **Connect them** to show how they relate (what belongs under what, and what’s simply related).
-4. **Explore and refine** as your understanding grows.
-5. **Save a copy** as a file if you want a backup or want to move/share your work.
+## How it works
 
-You don’t need a cloud account to get started — a local account takes just a name.
+<table>
+  <tr>
+    <td width="60" align="center"><code>01</code></td>
+    <td><strong>Create a graph</strong> for a topic, project, or question you’re exploring.</td>
+  </tr>
+  <tr>
+    <td align="center"><code>02</code></td>
+    <td><strong>Drop in the pieces</strong> — half-formed ideas, quotes, links, questions, and tasks.</td>
+  </tr>
+  <tr>
+    <td align="center"><code>03</code></td>
+    <td><strong>Draw the connections</strong> to show how they relate—what belongs under what, and what sparks another thought.</td>
+  </tr>
+  <tr>
+    <td align="center"><code>04</code></td>
+    <td><strong>Zoom out and refine</strong> as patterns emerge and your point of view takes shape.</td>
+  </tr>
+  <tr>
+    <td align="center"><code>05</code></td>
+    <td><strong>Save a copy</strong> as a file anytime you want a backup or want to share your map.</td>
+  </tr>
+</table>
 
-## Accounts and optional cloud sync
+> You don’t need a cloud account to get started—a local account takes just a display name.
 
-fleurıs is local-first. Completing an account is compulsory before the dashboard opens, but the account can be entirely local.
+---
 
-- **Local account:** choose **Local** on the sign-in or sign-up page, enter a display name, and continue. The name and every graph stay in this browser. No email or password.
-- **Cloud account:** sign up or sign in with Supabase when it is configured. The account's `public.graphs` rows are authoritative; edits sync quietly after changes.
-- **Route guard:** `/dashboard` and the editor always require a completed account. Signed-out visitors are sent to `/login`, whether or not Supabase is configured. There is no bypass.
-- **Signing out:** clears the current account and returns to the sign-in page, where you can choose local or cloud again.
+## Accounts & optional cloud sync
 
-Local and cloud libraries are kept in separate browser caches. Signing into a cloud account never mixes this browser's local graphs into that account: the dashboard shows exactly the rows owned by the signed-in user. Local graphs stay available when you switch back to a local account.
+fleurıs is **local-first**. You’ll set up a quick account before entering the dashboard, and it can stay completely local on your machine.
 
-Cloud sync is automatic: edits push after a short pause, queued edits flush when the tab is hidden, and a fresh pull runs on sign-in, tab focus, reconnect, and once a minute while the tab is open. Signed-in users can also trigger a sync from the dashboard or account menu.
+| Mode | How it works |
+| :--- | :--- |
+| **Local account** | Choose **Local** on sign-in or sign-up, enter a display name, and jump in. Your name and graphs stay right in your browser—no email or password needed. |
+| **Cloud account** | Sign up or sign in with Supabase when configured. Your account's `public.graphs` rows are the source of truth, and edits sync quietly in the background. |
 
-## Running fleurıs locally
+- **Route guard:** `/dashboard` and the editor always require an active account. Signed-out visitors are redirected to `/login`, whether or not Supabase is configured.
+- **Library isolation:** Local and cloud libraries live in separate browser caches. Signing into a cloud account never mixes your local browser graphs into that account—and your local graphs stay untouched when you switch back.
+- **Automatic sync:** Edits push after a short pause, queued changes flush when you hide or close the tab, and fresh updates pull on sign-in, tab focus, reconnect, and once a minute while open. Manual sync is also available in the dashboard and account menu.
+- **Signing out:** Clears the active session and returns to `/login`, where you can switch between local and cloud accounts anytime.
 
-```bash
-npm install
-npm run dev
-```
+<details>
+<summary><strong>What is stored in the cloud?</strong></summary>
+<br />
+Each row in <code>public.graphs</code> belongs to a single user (<code>user_id</code>) and stores the graph slug, title, description, nodes, connections, viewport state, and timestamps. Row-level security ensures users can only read and modify their own rows.
+</details>
 
-Open `http://localhost:3000`. No configuration is required for local-only use.
-
-The `dev`, `build`, `generate`, and `preview` scripts load `.env` and `.env.local`, with
-`.env.local` taking precedence. If you run `nuxi` directly, pass
-`--dotenv .env --dotenv .env.local` yourself. `NUXT_PUBLIC_SUPABASE_URL` and
-`NUXT_PUBLIC_SUPABASE_KEY` also work as runtime overrides.
-
-## Optional: enable accounts with Supabase
-
-1. Copy the environment template to `.env.local`:
-
-   ```bash
-   cp .env.example .env.local
-   ```
-
-2. Create a Supabase project, or start one locally with the [Supabase CLI](https://supabase.com/docs/guides/local-development):
-
-   ```bash
-   supabase start
-   ```
-
-3. Add the URL and publishable/anon key to `.env.local`:
-
-   ```env
-   # Hosted project
-   SUPABASE_URL=https://your-project.supabase.co
-   SUPABASE_KEY=your-publishable-key
-
-   # Or local Supabase
-   # SUPABASE_URL=http://127.0.0.1:54321
-   # SUPABASE_KEY=your-local-anon-key
-   ```
-
-   `nuxt.config.ts` maps these into `runtimeConfig.public.supabaseUrl` and
-   `runtimeConfig.public.supabaseKey`. Use only the publishable/anon key here;
-   never put a service-role secret in a public runtime config value.
-
-4. Run [`supabase/schema.sql`](./supabase/schema.sql) in the Supabase SQL editor (or as a migration). It creates the `graphs` table, indexes, and row-level security policies. The file ends with `notify pgrst, 'reload schema';` so PostgREST refreshes its schema cache immediately. If you still see `PGRST205` / “Could not find the table 'public.graphs' in the schema cache”, run that `notify` line once manually.
-
-5. In Supabase, add these redirect URLs under **Authentication → URL Configuration**:
-
-   - `http://localhost:3000/auth/callback`
-   - your production URL followed by `/auth/callback`
-
-6. Restart the Nuxt dev server.
-
-Email/password sign-up must be enabled under **Authentication → Providers → Email**. If email confirmation is on, Supabase sends the confirmation link that returns to `/auth/callback`.
-
-### What is stored in Supabase
-
-Each row in `public.graphs` belongs to one user (`user_id`) and contains the graph slug, title, description, nodes, connections, viewport, and timestamps. Row-level security ensures a signed-in user can only read and write their own rows.
+---
 
 ## What’s in this project
 
-This repository contains the fleurıs website and the graph workspace in one Nuxt application.
+This repository houses both the fleurıs frontend and the backend in a single application, making it a mono repository:
 
-- **Dashboard:** where you can find, create, open, copy, import, export, and remove your graphs.
-- **Graph editor:** a visual canvas for adding ideas, connecting them, and shaping your map over time.
-- **Auth pages:** `/login` and `/signup` with local and cloud account choices, plus `/auth/callback` for email confirmation.
-- **Database schema:** [`supabase/schema.sql`](./supabase/schema.sql) for optional cloud sync.
+- **Dashboard** — A place to find, create, open, copy, import, export, and delete your graphs.
+- **Graph editor** — A canvas for capturing ideas, linking them, and shaping your map over time.
+- **Auth** — A place which allows you to choose your choice about the data. Without others.
 
+---
 
-## Community and project files
+## Community & project files
 
 - [Contributing guide](./CONTRIBUTING.md)
 - [Code of Conduct](./CODE_OF_CONDUCT.md)
 - [Security policy](./SECURITY.md)
-- [License](./LICENSE) — view and use permitted; modification, code changes/removal, and redistribution are not permitted without prior written permission.
-
